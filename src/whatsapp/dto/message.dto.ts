@@ -7,6 +7,14 @@ export class MessageDto {
   message: string;
 }
 
+export class TemplateMessageDto {
+  @IsString()
+  from: string;
+
+  @IsString()
+  template: string;
+}
+
 export class MessagePayloadDto {
   @IsString()
   body: string;

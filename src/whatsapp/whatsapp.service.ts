@@ -17,28 +17,23 @@ export class WhatsappService {
     //private readonly httpService: HttpService,
   ) {}
 
-  async sendWhatsappMessage(
-    recipientNumber: string,
-    message: string,
-  ): Promise<any> {
-    //const senderNumber = '<<SENDER_NUMBER>>'; // Replace with your sender number
-    //this.wa = new WhatsApp(senderNumber);
-    try {
-      const sentTextMessage = this.wa.messages.send({
-        messaging_product: 'whatsapp',
-        to: recipientNumber,
-        text: {
-          body: message,
-        },
-      });
-      const response = await sentTextMessage;
-      console.log(response);
-      return response;
-    } catch (e) {
-      console.error(e);
-      return e;
-    }
-  }
+  // async sendWhatsappMessage(
+  //   recipientNumber: string,
+  //   message: string,
+  // ): Promise<any> {
+  //   try {
+  //     await this.wa.messages.text(
+  //       {
+  //         body: message,
+  //         preview_url: false,
+  //       },
+  //       parseInt(recipientNumber),
+  //     );
+  //   } catch (e) {
+  //     console.error(e.message);
+  //     return e;
+  //   }
+  // }
 
   async sendMessage(to: string, message: string) {
     const params = {
@@ -81,33 +76,46 @@ export class WhatsappService {
     });
   }
 
-  // private async sendWhatsappMessage(to: string, message: string) {
-  //   // const response = this.httpService.post(
-  //   //   `https://graph.facebook.com/v20.0/${this.config.get('WA_PHONE_NUMBER_ID')}/messages`,
-  //   //   Headers,
-  //   //   {},
-  //   // );
-  //   const response = await axios({
-  //     method: 'post',
-  //     url: `https://graph.facebook.com/v20.0/442660612263668/messages`,
-  //     headers: {
-  //       Authorization: `Bearer EAA0waxIBri4BO6ZAOuvsYCosILlZBHTiXPIU8ZAklABVNZB99LXbxMm4KTJ7G829c1vo8A80UmEvbEK1idAtRbLX2oGikU5H8XQ7ZAkr2IkR8tYTNQy14QIhfDiK3daOy009QZCa3ZChSayiyYyszHWGZC54z4ubsZArnb8EWx2ZCSYHHu6p3SrQflsOJK37oUXzzha5wuGQrOLc1OPG2nPYJvWwYJdZAac464ZD'`,
-  //       'Content-Type': 'application/json',
-  //     },
-  //     data: JSON.stringify({
-  //       messaging_product: 'whatsapp',
-  //       to: '256764990357',
-  //       type: 'template',
-  //       //text: { body: message },
-  //       template: {
-  //         name: 'hello_world',
-  //         language: { code: 'en_US' },
-  //       },
-  //     }),
-  //   });
-  //   //console.log(response);
-  //   return response;
-  // }
+  async sendWhatsappMessage(to: string, message: string) {
+    const response = await axios({
+      method: 'post',
+      url: `https://graph.facebook.com/v21.0/${process.env.WA_PHONE_NUMBER_ID}/messages`,
+      headers: {
+        Authorization: `Bearer ${this.config.get('CLOUD_API_ACCESS_TOKEN')}`,
+        'Content-Type': 'application/json',
+      },
+      data: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to: to,
+        type: 'text',
+        text: { body: message },
+      }),
+    });
+    console.log(response.data);
+    return response;
+  }
+
+  async sendWhatsappTemplateMessage(to: string, template: string) {
+    const response = await axios({
+      method: 'post',
+      url: `https://graph.facebook.com/v21.0/${process.env.WA_PHONE_NUMBER_ID}/messages`,
+      headers: {
+        Authorization: `Bearer ${process.env.CLOUD_API_ACCESS_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      data: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to: to,
+        type: 'template',
+        template: {
+          name: template,
+          language: { code: 'en_US' },
+        },
+      }),
+    });
+    console.log(response);
+    return response;
+  }
 
   private async sendWhatsappMessageWithVonage(to: string, message: string) {
     const response = await axios({
@@ -141,6 +149,15 @@ export class WhatsappService {
       });
   }
 
+  /*************  ✨ Codeium Command ⭐  *************/
+  /**
+   * Handles incoming WhatsApp messages.
+   *
+   * @param {any} payload
+   *
+   * @returns {Promise<void>}
+   */
+  /******  05166fb9-8c79-45ad-b42c-2bdefd1887df  *******/
   async handleIncomingMessage(payload: any): Promise<void> {
     try {
       this.logger.log('Received WhatsApp message:', JSON.stringify(payload));
