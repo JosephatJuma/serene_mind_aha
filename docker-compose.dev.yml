@@ -1,0 +1,26 @@
+version: '3'
+services:
+  backend:
+    build:
+      context: ./
+      # args:
+      #   - DATABASE_URL="mysql://root:@localhost:3306/production"
+    container_name: serene_mind_backend
+    image: serene_mind
+    environment:
+      - PORT=3000
+      #Whatsapp
+      - WA_PHONE_NUMBER_ID=xxx
+      - WHATSAPP_BUSINESS_ACCOUNT_ID=xxx
+      - CLOUD_API_ACCESS_TOKEN=xxx
+      - CLOUD_API_VERSION=21.0
+    env_file:
+      - .env
+    ports:
+      - '3000:3000'
+    networks:
+      - serene_network
+
+networks:
+  serene_network:
+    driver: bridge
