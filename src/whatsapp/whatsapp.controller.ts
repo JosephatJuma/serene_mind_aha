@@ -48,7 +48,7 @@ export class WhatsappController {
     schema: {
       type: 'object',
       properties: {
-        from: {
+        to: {
           type: 'string',
           description: 'The sender of the message without + ',
           example: '256764990357',
@@ -63,7 +63,7 @@ export class WhatsappController {
     },
   })
   async sendMessage(@Body() dto: MessageDto) {
-    await this.whatsappService.sendWhatsappMessage(dto.from, dto.message);
+    await this.whatsappService.sendWhatsappMessage(dto.to, dto.message);
   }
 
   @Post('/template')
@@ -71,7 +71,7 @@ export class WhatsappController {
     schema: {
       type: 'object',
       properties: {
-        from: {
+        to: {
           type: 'string',
           description: 'The sender of the message without + ',
           example: '256764990357',
@@ -87,7 +87,7 @@ export class WhatsappController {
   })
   async sendTemplateMessage(@Body() dto: TemplateMessageDto) {
     await this.whatsappService.sendWhatsappTemplateMessage(
-      dto.from,
+      dto.to,
       dto.template,
     );
   }

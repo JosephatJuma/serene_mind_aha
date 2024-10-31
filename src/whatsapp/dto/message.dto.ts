@@ -1,7 +1,7 @@
 import { IsString } from 'class-validator';
 export class MessageDto {
   @IsString()
-  from: string;
+  to: string;
 
   @IsString()
   message: string;
@@ -9,7 +9,7 @@ export class MessageDto {
 
 export class TemplateMessageDto {
   @IsString()
-  from: string;
+  to: string;
 
   @IsString()
   template: string;

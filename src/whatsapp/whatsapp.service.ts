@@ -45,7 +45,7 @@ export class WhatsappService {
   }
 
   async receiveMessage(dto: MessageDto) {
-    const userNumber = dto.from;
+    const userNumber = dto.to;
     const messageBody = dto.message;
 
     // Authorization logic
@@ -64,7 +64,7 @@ export class WhatsappService {
     }
 
     // Send response
-    await this.sendWhatsappMessageWithVonage(dto.from, dto.message);
+    await this.sendWhatsappMessageWithVonage(dto.to, dto.message);
   }
 
   configureVonage() {
@@ -91,8 +91,10 @@ export class WhatsappService {
         text: { body: message },
       }),
     });
-    console.log(response.data);
-    return response;
+    if (response.status === 200) {
+      throw new HttpException('Message sent successfully', HttpStatus.OK);
+    }
+    return response.data;
   }
 
   async sendWhatsappTemplateMessage(to: string, template: string) {
