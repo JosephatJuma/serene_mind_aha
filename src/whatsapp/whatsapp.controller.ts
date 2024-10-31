@@ -13,7 +13,7 @@ export class WhatsappController {
     schema: {
       type: 'object',
       properties: {
-        from: {
+        to: {
           type: 'string',
           description: 'The sender of the message without + ',
           example: '256764990357',
