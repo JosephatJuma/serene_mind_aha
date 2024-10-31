@@ -64,7 +64,7 @@ export class WhatsappService {
     }
 
     // Send response
-    await this.sendWhatsappMessageWithVonage(dto.to, dto.message);
+    await this.sendWhatsappMessage(dto.to, dto.message);
   }
 
   configureVonage() {
@@ -119,37 +119,37 @@ export class WhatsappService {
     return response;
   }
 
-  private async sendWhatsappMessageWithVonage(to: string, message: string) {
-    const response = await axios({
-      method: 'post',
-      url: `https://messages-sandbox.nexmo.com/v1/messages`,
-      auth: {
-        username: '368e70f4',
-        password: '5w64r9t7HfMLUSbJ',
-      },
+  // private async sendWhatsappMessageWithVonage(to: string, message: string) {
+  //   const response = await axios({
+  //     method: 'post',
+  //     url: `https://messages-sandbox.nexmo.com/v1/messages`,
+  //     auth: {
+  //       username: process.env.VONAGE_API_KEY,
+  //       password: process.env.VONAGE_API_SECRET,
+  //     },
 
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      data: {
-        from: '14157386102',
-        to: to,
-        message_type: 'text',
-        text: message,
-        channel: 'whatsapp',
-      },
-    })
-      .then((response) => {
-        console.log(response);
+  //     headers: {
+  //       'Content-Type': 'application/json',
+  //       Accept: 'application/json',
+  //     },
+  //     data: {
+  //       from: '14157386102',
+  //       to: to,
+  //       message_type: 'text',
+  //       text: message,
+  //       channel: 'whatsapp',
+  //     },
+  //   })
+  //     .then((response) => {
+  //       console.log(response);
 
-        return response;
-      })
-      .catch((error) => {
-        console.log(error);
-        throw new HttpException(error, error.status);
-      });
-  }
+  //       return response;
+  //     })
+  //     .catch((error) => {
+  //       console.log(error);
+  //       throw new HttpException(error, error.status);
+  //     });
+  // }
 
   /*************  ✨ Codeium Command ⭐  *************/
   /**
@@ -165,7 +165,10 @@ export class WhatsappService {
       this.logger.log('Received WhatsApp message:', JSON.stringify(payload));
 
       if (payload.type === 'text') {
+        console.log(payload);
         return await this.processMessage(payload);
+      } else {
+        this.sendWhatsappMessage(payload.from, 'Invalid message type');
       }
 
       return;
