@@ -48,9 +48,9 @@ export class WhatsappService {
       }),
     });
     if (response.status === 200) {
-      throw new HttpException('Message sent successfully', HttpStatus.OK);
+      return response.data
     }
-    console.log(response);
+   
 
     return response.data;
   }
@@ -113,17 +113,17 @@ export class WhatsappService {
   //     });
   // }
 
-  async handleIncomingMessage(payload: IncomingMessageDto): Promise<void> {
-    if (payload.message_type === 'text') {
-      await this.processMessage(payload.text, payload.from.number);
-    } else if (payload.message_type == 'options') {
+  async handleIncomingMessage(message: any): Promise<void> {
+    if (message.type=== 'text') {
+      await this.processMessage(message.text.body, message.from);
+    } else if (message.type == 'options') {
       // Not at all (0-1 days ).
       // Several days ( 2-6 days).
       // More than half the days (7 -11 days)
       // Nearly everyday (1 2-14 days)
 
       await this.sendWhatsappInteractiveMessage(
-        payload.from.number,
+        message.from,
         'Over the last two weeks, how often have you been bothered by any of the following problems? Please select/ tick the statements below to help me assess you better:\n\nLittle interest/ pleasure in doing things\n',
         [
           { id: '1', title: 'Not at all' },
@@ -134,7 +134,7 @@ export class WhatsappService {
       );
     } else {
       await this.sendWhatsappMessage(
-        payload.from.number,
+        message.from,
         'Could not process message ',
       );
     }
@@ -228,7 +228,7 @@ export class WhatsappService {
     if (!isNaN(Number(message))) {
       await this.sendWhatsappMessage(
         client.whatsapp_number,
-        'Age must be a number\n\n What is your aga?',
+        'Age must be a number\n\nWhat is your aga?',
       );
     }
     await this.prisma.client.update({

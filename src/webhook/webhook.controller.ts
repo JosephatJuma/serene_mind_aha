@@ -1,5 +1,5 @@
 // whatsapp.controller.ts
-import { Controller, Post, Body, Res, HttpStatus, Get } from '@nestjs/common';
+import { Controller, Post, Body, Res, Query, Get } from '@nestjs/common';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { ApiTags, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { Request } from 'express';
@@ -73,7 +73,18 @@ export class WebhookController {
     type: String,
   })
   async handleIncomingMessage(@Body() payload: any) {
-    await this.whatsappService.handleIncomingMessage(payload);
+    const {messages}=payload?.entry?.[0]?.changes?.[0]?.value ?? {}
+    if(!messages) return 
+    const message=messages[0];
+    const messageSender=message?.from
+    const messageId=message?.id
+    console.log(message)
+    this.whatsappService.handleIncomingMessage(message)
+    // switch(message?.type){
+    //   case 'text':
+    //     const text=message.text.body
+    //     break
+    // }
   }
 
   @Post('status')
@@ -81,16 +92,20 @@ export class WebhookController {
     await this.whatsappService.handleStatusUpdate(payload);
   }
   @Get()
-  whatsappVerificationChallenge(@Res() request: Request) {
-    const mode=request.query['hub.mode'];
-    const challenge=request.query['hub.challenge'];
-    const token=request.query['hub.verify_token'];
-    const verificationToken = process.env.WHATSAPP_CLOUD_API_WEBHOOK_VERIFICATION_TOKEN
-    if(!mode || !token){
+  whatsappVerificationChallenge(
+    @Query('hub.mode') mode: string,
+    @Query('hub.challenge') challenge: string,
+    @Query('hub.verify_token') token: string
+  ) {
+    const verificationToken = process.env.WHATSAPP_CLOUD_API_WEBHOOK_VERIFICATION_TOKEN;
+    if (!mode || !token) {
       return "Error verifying token";
     }
-    if(mode=='subscribe' && token===verificationToken){
+    if (mode === 'subscribe' && token === verificationToken) {
+      console.log("hey from fb")
       return challenge.toString();
     }
+    return "Verification failed";
   }
+  
 }
