@@ -1,0 +1,76 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id    String  @id @default(uuid())
+  email String  @unique
+  name  String?
+}
+
+model Client {
+  id                      String    @id @default(uuid())
+  name                    String?
+  age                     Int?
+  gender                  String?
+  phone                   String?
+  whatsapp_number         String?
+  last_interaction        DateTime? @default(now())
+  last_question           Question? @relation(fields: [lastQuestionId], references: [id])
+  lastQuestionId          String?
+  screeningStatus         Status    @default(WELCOME)
+  location                String?
+  is_staying_with_someone Boolean?
+  someone_phone_number    String?
+  isScreened              Boolean?
+  Answer                  Answer[]
+
+  @@unique([whatsapp_number])
+}
+
+model Question {
+  id       String     @id @default(uuid())
+  addedAt  DateTime   @default(now())
+  content  String     @db.VarChar(1000)
+  parent   Question?  @relation("parent_to_child", fields: [parentId], references: [id])
+  parentId String?
+  children Question[] @relation("parent_to_child")
+  Client   Client[]
+  status   Status
+  Answer   Answer[]
+
+  @@map("question")
+}
+
+model Answer {
+  id         String    @id @default(uuid())
+  addedAt    DateTime  @default(now())
+  content    String    @db.VarChar(1000)
+  Question   Question? @relation(fields: [questionId], references: [id])
+  questionId String
+  clinet     Client?   @relation(fields: [clientId], references: [id])
+  clientId   String?
+}
+
+enum Status {
+  WELCOME
+  NAME
+  AGE
+  GENDER
+  LOCATION
+  NEXT_OF_KIN
+  NEXT_OF_KIN_PHONE
+  SCREENING
+  FEELING_PAST_TWO_WEEKS
+}
