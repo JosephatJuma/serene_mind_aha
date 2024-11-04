@@ -1,7 +1,9 @@
 // whatsapp.controller.ts
-import { Controller, Post, Body, Res, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Res, HttpStatus, Get } from '@nestjs/common';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { ApiTags, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { Request } from 'express';
+import * as process from 'node:process';
 
 @Controller('webhook')
 @ApiTags('Webhook')
@@ -11,7 +13,7 @@ export class WebhookController {
     //private readonly webhookService: WebhookService,
   ) {}
 
-  @Post('inbound')
+  @Post()
   @ApiBody({
     schema: {
       type: 'object',
@@ -77,5 +79,18 @@ export class WebhookController {
   @Post('status')
   async handleStatusUpdate(@Body() payload: any, @Res() res: Response) {
     await this.whatsappService.handleStatusUpdate(payload);
+  }
+  @Get()
+  whatsappVerificationChallenge(@Res() request: Request) {
+    const mode=request.query['hub.mode'];
+    const challenge=request.query['hub.challenge'];
+    const token=request.query['hub.verify_token'];
+    const verificationToken = process.env.WHATSAPP_CLOUD_API_WEBHOOK_VERIFICATION_TOKEN
+    if(!mode || !token){
+      return "Error verifying token";
+    }
+    if(mode=='subscribe' && token===verificationToken){
+      return challenge.toString();
+    }
   }
 }
