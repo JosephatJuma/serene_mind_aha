@@ -5,6 +5,7 @@ import { VonageService } from './vonage/vonage.service';
 import { ConfigService } from '@nestjs/config';
 import { WebhookModule } from './webhook/webhook.module';
 import { ConfigModule } from '@nestjs/config';
+import { QuestionsModule } from './questions/questions.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { ConfigModule } from '@nestjs/config';
       envFilePath: '.env',
       isGlobal: true,
     }),
+    QuestionsModule,
   ],
   controllers: [],
   providers: [AppService, VonageService, ConfigService],

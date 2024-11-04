@@ -70,7 +70,7 @@ export class WebhookController {
     description: 'The message was not received successfully',
     type: String,
   })
-  async handleIncomingMessage(@Body() payload: any, @Res() res: Response) {
+  async handleIncomingMessage(@Body() payload: any) {
     await this.whatsappService.handleIncomingMessage(payload);
   }
 
