@@ -1,4 +1,4 @@
-import {  Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 
@@ -90,9 +90,8 @@ export class WhatsappService {
     });
 
     if (response.status === 200) {
-      this.logger.log("Interactive message sent");
+      this.logger.log('Interactive message sent');
       return response.data;
     }
-
   }
 }
