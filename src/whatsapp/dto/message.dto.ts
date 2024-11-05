@@ -20,24 +20,33 @@ export class MessagePayloadDto {
   body: string;
 }
 
-// export class IncomingMessageDto {
-//   @IsString()
-//   from: string;
-// }
+type TextMessage = {
+  body: string;
+};
+type AudioMessage = {
+  mime_type: string;
+  sha256: string;
+  id: string;
+  voice: boolean;
+};
+type ImageMessage = {
+  mime_type: string;
+  sha256: string;
+  id: string;
+};
+type VideoMessage = {
+  mime_type: string;
+  sha256: string;
+  id: string;
+};
 
 export type IncomingMessageDto = {
-  message_uuid: string;
-  to: {
-    type: 'whatsapp';
-    number: string;
-  };
-  from: {
-    type: 'whatsapp';
-    number: string;
-  };
-  timestamp: string; // ISO date string format
-  text: string;
-  message_type: 'text';
-  channel: 'whatsapp';
-  status: 'delivered' | 'sent' | 'failed' | 'read'; // Other statuses can be added as needed
+  from: string;
+  id: string;
+  timestamp: number;
+  type: string;
+  text?: TextMessage;
+  audio?: AudioMessage;
+  image?: ImageMessage;
+  video?: VideoMessage;
 };
