@@ -27,16 +27,18 @@ model Client {
   phone                   String?
   whatsapp_number         String?
   last_interaction        DateTime?        @default(now())
-  // last_question           Question? @relation(fields: [lastQuestionId], references: [id])
-  // lastQuestionId          String?
   screeningStatus         Status           @default(WELCOME)
   location                String?
   is_staying_with_someone Boolean?
   someone_phone_number    String?
   isScreened              Boolean?
   responses               ClientResponse[]
-  lastScreenDate          DateTime?
+  lastScreeningDate          DateTime?
   currentQuestionIndex    Int?
+  depressionScore Int?
+  depressionScale Scale?
+  axientyScore Int?
+  axientyScale Scale?
 
   @@unique([whatsapp_number])
   @@map("client")
@@ -59,6 +61,9 @@ model ClientResponse {
   answer   String   @db.VarChar(1000)
   client   Client?  @relation(fields: [clientId], references: [id])
   clientId String?
+  question String
+  score Int?
+  timestamp BigInt?
 
   @@map("response")
 }
@@ -74,4 +79,11 @@ enum Status {
   SCREENING
   DEPRESSION
   ANXIETY
+}
+
+enum Scale {
+  MINIMAL_OR_NONE 
+  SEVERE
+  MILD
+  MODERATE 
 }

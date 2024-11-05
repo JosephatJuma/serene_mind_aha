@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { WhatsappService } from 'src/whatsapp/whatsapp.service';
 import { PrismaClient ,Client} from '@prisma/client';
 import { DepressionQuestionsClass } from './depression-questions.service';
+
 @Injectable()
 export class ScreeningService {
     constructor(private whatsappService:WhatsappService,private prisma:PrismaClient, private depressionQuestions:DepressionQuestionsClass){}
@@ -29,27 +30,27 @@ async  handleResponse(client: Client, response: string) {
     const score = question.options[selectedOption].score;
 
     // Store response and score in the database
-    await this.prisma.clientResponses.create({
+    await this.prisma.clientResponse.create({
       data: {
         clientId: client.id,
-        question: question.question,
+        //question: question.question,
         answer: question.options[selectedOption].text,
-        score: score,
+        //score: score,
       },
     });
 
     // Update the client's question progress
     if (questionIndex < this.depressionQuestions.questions.length - 1) {
-      await prisma.client.update({
+      await this.prisma.client.update({
         where: { id: client.id },
         data: { currentQuestionIndex: questionIndex + 1 },
       });
 
       // Ask the next question
-      await askNextQuestion(client);
+      await this.askNextQuestion(client);
     } else {
       // All questions completed - calculate the final score
-      await calculateAndSendFinalScore(client);
+      await this.calculateAndSendFinalScore(client);
     }
   } else {
     // Send an error message if the response is invalid
@@ -57,21 +58,21 @@ async  handleResponse(client: Client, response: string) {
       client.whatsapp_number,
       "Invalid response. Please reply with the number corresponding to your choice."
     );
-    await askNextQuestion(client);  // Repeat the question
+    await this.askNextQuestion(client);  // Repeat the question
   }
 }
 
 // Function to calculate and send the final score
 async  calculateAndSendFinalScore(client: Client) {
-  const responses = await prisma.clientResponses.findMany({
+  const responses = await this.prisma.clientResponse.findMany({
     where: { clientId: client.id },
   });
 
   const totalScore = responses.reduce((sum, response) => sum + response.score, 0);
-
-  await sendWhatsappMessage(
+console.log(totalScore)
+  await this.whatsappService.sendWhatsappMessage(
     client.whatsapp_number,
-    `Thank you for your responses. Your assessment score is: ${totalScore}`
+    `Thank you for your responses. Next Is Axienty`
   );
 }
   
