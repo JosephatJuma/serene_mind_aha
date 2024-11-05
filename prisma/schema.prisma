@@ -20,21 +20,21 @@ model User {
 }
 
 model Client {
-  id                      String    @id @default(uuid())
+  id                      String           @id @default(uuid())
   name                    String?
   age                     Int?
   gender                  String?
   phone                   String?
   whatsapp_number         String?
-  last_interaction        DateTime? @default(now())
+  last_interaction        DateTime?        @default(now())
   // last_question           Question? @relation(fields: [lastQuestionId], references: [id])
   // lastQuestionId          String?
-  screeningStatus         Status    @default(WELCOME)
+  screeningStatus         Status           @default(WELCOME)
   location                String?
   is_staying_with_someone Boolean?
   someone_phone_number    String?
   isScreened              Boolean?
-  answer                  Answer[]
+  responses               ClientResponse[]
   lastScreenDate          DateTime?
   currentQuestionIndex    Int?
 
@@ -53,14 +53,14 @@ model Question {
   @@map("question")
 }
 
-model Answer {
+model ClientResponse {
   id       String   @id @default(uuid())
   addedAt  DateTime @default(now())
   answer   String   @db.VarChar(1000)
   client   Client?  @relation(fields: [clientId], references: [id])
   clientId String?
 
-  @@map("answer")
+  @@map("response")
 }
 
 enum Status {

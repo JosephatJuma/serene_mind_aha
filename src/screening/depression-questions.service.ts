@@ -19,7 +19,7 @@ export class DepressionQuestionsClass {
     { text: "Nearly every day (12-14 days)", score: 3 },
   ];
 
-  public DepressionQuestions: Question[] = [
+  public questions: Question[] = [
     {
       question: "Little interest or pleasure in doing things?",
       options: this.defaultOptions,

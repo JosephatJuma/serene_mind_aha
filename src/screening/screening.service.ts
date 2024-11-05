@@ -1,25 +1,26 @@
 import { Injectable } from '@nestjs/common';
 import { WhatsappService } from 'src/whatsapp/whatsapp.service';
 import { PrismaClient ,Client} from '@prisma/client';
+import { DepressionQuestionsClass } from './depression-questions.service';
 @Injectable()
 export class ScreeningService {
-    constructor(private whatsappService:WhatsappService,private prisma:PrismaClient){}
+    constructor(private whatsappService:WhatsappService,private prisma:PrismaClient, private depressionQuestions:DepressionQuestionsClass){}
   // Function to send the next question based on the client's progress
-async function askNextQuestion(client: Client) {
-  const questionIndex = client.currentQuestionIndex;
-  const question = questions[questionIndex];
+async  askNextQuestion(client: Client) {
+  const questionIndex = client.whatsapp_number;
+  const question = this.depressionQuestions.questions[questionIndex];
 
   // Format question and options into a message
   const message = `${question.question}\n` + 
     question.options.map((opt, index) => `${index + 1}. ${opt.text}`).join("\n");
 
-  await sendWhatsappMessage(client.whatsapp_number, message);
+  await this.whatsappService.sendWhatsappMessage(client.whatsapp_number, message);
 }
 
 // Function to handle user responses
-async function handleResponse(client: Client, response: string) {
+async  handleResponse(client: Client, response: string) {
   const questionIndex = client.currentQuestionIndex;
-  const question = questions[questionIndex];
+  const question = this.depressionQuestions.questions[questionIndex];
 
   // Convert response to an index
   const selectedOption = parseInt(response) - 1;
@@ -28,7 +29,7 @@ async function handleResponse(client: Client, response: string) {
     const score = question.options[selectedOption].score;
 
     // Store response and score in the database
-    await prisma.clientResponses.create({
+    await this.prisma.clientResponses.create({
       data: {
         clientId: client.id,
         question: question.question,
@@ -38,7 +39,7 @@ async function handleResponse(client: Client, response: string) {
     });
 
     // Update the client's question progress
-    if (questionIndex < questions.length - 1) {
+    if (questionIndex < this.depressionQuestions.questions.length - 1) {
       await prisma.client.update({
         where: { id: client.id },
         data: { currentQuestionIndex: questionIndex + 1 },
@@ -52,7 +53,7 @@ async function handleResponse(client: Client, response: string) {
     }
   } else {
     // Send an error message if the response is invalid
-    await sendWhatsappMessage(
+    await this.whatsappService.sendWhatsappMessage(
       client.whatsapp_number,
       "Invalid response. Please reply with the number corresponding to your choice."
     );
@@ -61,7 +62,7 @@ async function handleResponse(client: Client, response: string) {
 }
 
 // Function to calculate and send the final score
-async function calculateAndSendFinalScore(client: Client) {
+async  calculateAndSendFinalScore(client: Client) {
   const responses = await prisma.clientResponses.findMany({
     where: { clientId: client.id },
   });
