@@ -10,7 +10,7 @@ export class ScreeningService {
     private whatsappService: WhatsappService,
     private prisma: PrismaClient,
     private depressionQuestions: DepressionQuestionsClass,
-    private anxientQuestions: AncientQuestions,
+    private anxientyQuestions: AncientQuestions,
   ) {}
   async handleIncomingMessage(message: any): Promise<void> {
     if (message.type === 'text') {

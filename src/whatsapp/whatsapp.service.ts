@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import {  Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 
@@ -90,13 +90,9 @@ export class WhatsappService {
     });
 
     if (response.status === 200) {
-      throw new HttpException(
-        'Interactive message sent successfully',
-        HttpStatus.OK,
-      );
+      this.logger.log("Interactive message sent");
+      return response.data;
     }
-    console.log(response);
 
-    return response.data;
   }
 }

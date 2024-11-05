@@ -11,7 +11,7 @@ interface Question {
 }
 
 @Injectable()
-export class AncientQuestions {
+export class AnxientyQuestions {
   private readonly defaultOptions: Option[] = [
     { text: 'Not at all', score: 0 },
     { text: 'Mildly, but it didn’t bother me so much', score: 1 },
