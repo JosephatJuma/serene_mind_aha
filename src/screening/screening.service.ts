@@ -64,10 +64,11 @@ export class ScreeningService {
 
   // Function to handle user responses
   private async handleResponse(client: Client, response: string) {
-    if(isNaN(parseInt(response))){
+    if(isNaN(parseInt(response)  )){
       await this.whatsappService.sendWhatsappMessage(client.whatsapp_number, "Please select a right number")
       await this.askNextQuestion(client)
     }
+   
     else{
 
     const questionIndex = client.currentQuestionIndex;
@@ -76,7 +77,7 @@ export class ScreeningService {
     // Convert response to an index
     const selectedOption = parseInt(response) - 1;
 
-    if (selectedOption >= 0 && selectedOption < question.options.length) {
+    if (selectedOption >= 0 && selectedOption <= question.options.length) {
       const score = question.options[selectedOption].score;
 
       // Store response and score in the database

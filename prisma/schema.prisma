@@ -63,6 +63,7 @@ model ClientResponse {
   clientId String?
   question String
   score Int?
+  status Status
   timestamp BigInt?
 
   @@map("response")
