@@ -81,40 +81,10 @@ export class WhatsappService {
     console.log(payload);
   }
 
-  // private async sendWhatsappMessageWithVonage(to: string, message: string) {
-  //   const response = await axios({
-  //     method: 'post',
-  //     url: `https://messages-sandbox.nexmo.com/v1/messages`,
-  //     auth: {
-  //       username: process.env.VONAGE_API_KEY,
-  //       password: process.env.VONAGE_API_SECRET,
-  //     },
-
-  //     headers: {
-  //       'Content-Type': 'application/json',
-  //       Accept: 'application/json',
-  //     },
-  //     data: {
-  //       from: '14157386102',
-  //       to: to,
-  //       message_type: 'text',
-  //       text: message,
-  //       channel: 'whatsapp',
-  //     },
-  //   })
-  //     .then((response) => {
-  //       console.log(response);
-
-  //       return response;
-  //     })
-  //     .catch((error) => {
-  //       console.log(error);
-  //       throw new HttpException(error, error.status);
-  //     });
-  // }
+  
 
   async handleIncomingMessage(message: any): Promise<void> {
-    if (message.type=== 'text') {
+    if (message.type === 'text') {
       await this.processMessage(message.text.body, message.from);
     } else if (message.type == 'options') {
       // Not at all (0-1 days ).
@@ -202,14 +172,22 @@ export class WhatsappService {
       });
       await this.sendWhatsappMessage(
         client.whatsapp_number,
-        'What is your Name?',
+        'What is your name?',
       );
-    } else {
+    } 
+    
+    else if(message.toLowerCase() === 'no') {
       await this.prisma.client.update({
         where: { id: client.id },
         data: { screeningStatus: 'SCREENING' },
       });
       await this.startScreening(client);
+    }
+    else{
+      await this.sendWhatsappMessage(
+        client.whatsapp_number,
+        'Please reply with Yes or No\n\nWould you tell me about yourself?',
+      );
     }
   }
 
@@ -225,12 +203,13 @@ export class WhatsappService {
   }
 
   private async handleAgeResponse(client: Client, message: string) {
-    if (!isNaN(Number(message))) {
+    if (isNaN(Number(message))) {
       await this.sendWhatsappMessage(
         client.whatsapp_number,
-        'Age must be a number\n\nWhat is your aga?',
+        'Age must be a number\n\nWhat is your age?',
       );
     }
+    else{
     await this.prisma.client.update({
       where: { id: client.id },
       data: { screeningStatus: 'GENDER', age: parseInt(message) },
@@ -239,6 +218,7 @@ export class WhatsappService {
       client.whatsapp_number,
       'What is your gender?',
     );
+  }
   }
 
   private async handleGenderResponse(client: Client, message: string) {
@@ -251,6 +231,7 @@ export class WhatsappService {
         'Please provide a valid gender, gender should be Male or Female',
       );
     }
+    else{
     await this.prisma.client.update({
       where: { id: client.id },
       data: { screeningStatus: 'LOCATION', gender: message.toUpperCase() },
@@ -258,7 +239,7 @@ export class WhatsappService {
     await this.sendWhatsappMessage(
       client.whatsapp_number,
       'Where do you stay?',
-    );
+      )}
   }
 
   private async handleLocationResponse(client: Client, message: string) {
@@ -272,7 +253,7 @@ export class WhatsappService {
     );
   }
   private async handleNextOfKinResponse(client: Client, message: string) {
-    let isStayingWithSomeOne = false;
+   
     if (message.toLowerCase() == 'yes') {
       await this.prisma.client.update({
         where: { id: client.id },
