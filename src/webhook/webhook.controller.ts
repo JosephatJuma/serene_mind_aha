@@ -4,13 +4,14 @@ import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { ApiTags, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { Request } from 'express';
 import * as process from 'node:process';
+import { ScreeningService } from 'src/screening/screening.service';
 
 @Controller('webhook')
 @ApiTags('Webhook')
 export class WebhookController {
   constructor(
     private readonly whatsappService: WhatsappService,
-    //private readonly webhookService: WebhookService,
+    private readonly screnning: ScreeningService,
   ) {}
 
   @Post()
@@ -73,13 +74,13 @@ export class WebhookController {
     type: String,
   })
   async handleIncomingMessage(@Body() payload: any) {
-    const {messages}=payload?.entry?.[0]?.changes?.[0]?.value ?? {}
-    if(!messages) return 
-    const message=messages[0];
-    const messageSender=message?.from
-    const messageId=message?.id
-    console.log(message)
-    this.whatsappService.handleIncomingMessage(message)
+    const { messages } = payload?.entry?.[0]?.changes?.[0]?.value ?? {};
+    if (!messages) return;
+    const message = messages[0];
+    const messageSender = message?.from;
+    const messageId = message?.id;
+    console.log(message);
+    this.screnning.handleIncomingMessage(message);
     // switch(message?.type){
     //   case 'text':
     //     const text=message.text.body
@@ -95,17 +96,17 @@ export class WebhookController {
   whatsappVerificationChallenge(
     @Query('hub.mode') mode: string,
     @Query('hub.challenge') challenge: string,
-    @Query('hub.verify_token') token: string
+    @Query('hub.verify_token') token: string,
   ) {
-    const verificationToken = process.env.WHATSAPP_CLOUD_API_WEBHOOK_VERIFICATION_TOKEN;
+    const verificationToken =
+      process.env.WHATSAPP_CLOUD_API_WEBHOOK_VERIFICATION_TOKEN;
     if (!mode || !token) {
-      return "Error verifying token";
+      return 'Error verifying token';
     }
     if (mode === 'subscribe' && token === verificationToken) {
-      console.log("hey from fb")
+      console.log('hey from fb');
       return challenge.toString();
     }
-    return "Verification failed";
+    return 'Verification failed';
   }
-  
 }
