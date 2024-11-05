@@ -4,6 +4,7 @@ import { WhatsappController } from './whatsapp.controller';
 import { ConfigService } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
 import { PrismaClient } from '@prisma/client';
+
 @Module({
   imports: [HttpModule],
   providers: [WhatsappService, ConfigService, PrismaClient],
