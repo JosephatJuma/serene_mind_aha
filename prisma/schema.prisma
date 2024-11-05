@@ -79,6 +79,7 @@ enum Status {
   SCREENING
   DEPRESSION
   ANXIETY
+  COMPLETED
 }
 
 enum Scale {
