@@ -6,6 +6,7 @@ import { ConfigService } from '@nestjs/config';
 import { WebhookModule } from './webhook/webhook.module';
 import { ConfigModule } from '@nestjs/config';
 import { QuestionsModule } from './questions/questions.module';
+import { ScreeningModule } from './screening/screening.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { QuestionsModule } from './questions/questions.module';
       isGlobal: true,
     }),
     QuestionsModule,
+    ScreeningModule,
   ],
   controllers: [],
   providers: [AppService, VonageService, ConfigService],

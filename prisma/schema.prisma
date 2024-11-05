@@ -27,16 +27,19 @@ model Client {
   phone                   String?
   whatsapp_number         String?
   last_interaction        DateTime? @default(now())
-  last_question           Question? @relation(fields: [lastQuestionId], references: [id])
-  lastQuestionId          String?
+  // last_question           Question? @relation(fields: [lastQuestionId], references: [id])
+  // lastQuestionId          String?
   screeningStatus         Status    @default(WELCOME)
   location                String?
   is_staying_with_someone Boolean?
   someone_phone_number    String?
   isScreened              Boolean?
-  Answer                  Answer[]
+  answer                  Answer[]
+  lastScreenDate DateTime?
+  currentQuestionIndex Number?
 
   @@unique([whatsapp_number])
+  @map("client")
 }
 
 model Question {
@@ -46,9 +49,7 @@ model Question {
   parent   Question?  @relation("parent_to_child", fields: [parentId], references: [id])
   parentId String?
   children Question[] @relation("parent_to_child")
-  Client   Client[]
-  status   Status
-  Answer   Answer[]
+ 
 
   @@map("question")
 }
@@ -56,11 +57,11 @@ model Question {
 model Answer {
   id         String    @id @default(uuid())
   addedAt    DateTime  @default(now())
-  content    String    @db.VarChar(1000)
-  Question   Question? @relation(fields: [questionId], references: [id])
-  questionId String
-  clinet     Client?   @relation(fields: [clientId], references: [id])
+  answer    String    @db.VarChar(1000)
+  client     Client?   @relation(fields: [clientId], references: [id])
   clientId   String?
+
+    @map("answer")
 }
 
 enum Status {
@@ -72,5 +73,6 @@ enum Status {
   NEXT_OF_KIN
   NEXT_OF_KIN_PHONE
   SCREENING
-  FEELING_PAST_TWO_WEEKS
+ DEPRESSION
+ ANXIETY
 }
