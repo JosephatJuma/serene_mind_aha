@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { WhatsappService } from 'src/whatsapp/whatsapp.service';
 import { PrismaClient, Client, Status } from '@prisma/client';
 import { DepressionQuestionsClass } from './depression-questions.service';
+import { AnxietyQuestions } from './anxienty-questions.service';
 
 @Injectable()
 export class ScreeningService {
@@ -9,27 +10,31 @@ export class ScreeningService {
     private whatsappService: WhatsappService,
     private prisma: PrismaClient,
     private depressionQuestions: DepressionQuestionsClass,
+    private anxientyQuestions: AnxietyQuestions,
   ) {}
   async handleIncomingMessage(message: any): Promise<void> {
     if (message.type === 'text') {
       await this.processMessage(message.text.body, message.from);
-    } else if (message.type == 'options') {
-      // Not at all (0-1 days ).
-      // Several days ( 2-6 days).
-      // More than half the days (7 -11 days)
-      // Nearly everyday (1 2-14 days)
+    }
 
-      await this.whatsappService.sendWhatsappInteractiveMessage(
-        message.from,
-        'Over the last two weeks, how often have you been bothered by any of the following problems? Please select/ tick the statements below to help me assess you better:\n\nLittle interest/ pleasure in doing things\n',
-        [
-          { id: '1', title: 'Not at all' },
-          { id: '2', title: 'Several days' },
-          { id: '3', title: 'Nearly everyday' },
-          // { id: '4', title: 'More than half' },
-        ],
-      );
-    } else {
+    // else if (message.type == 'options') {
+    //   // Not at all (0-1 days ).
+    //   // Several days ( 2-6 days).
+    //   // More than half the days (7 -11 days)
+    //   // Nearly everyday (1 2-14 days)
+
+    //   await this.whatsappService.sendWhatsappInteractiveMessage(
+    //     message.from,
+    //     'Over the last two weeks, how often have you been bothered by any of the following problems? Please select/ tick the statements below to help me assess you better:\n\nLittle interest/ pleasure in doing things\n',
+    //     [
+    //       { id: '1', title: 'Not at all' },
+    //       { id: '2', title: 'Several days' },
+    //       { id: '3', title: 'Nearly everyday' },
+    //       // { id: '4', title: 'More than half' },
+    //     ],
+    //   );
+    // }
+    else {
       await this.whatsappService.sendWhatsappMessage(
         message.from,
         'Could not process message ',
@@ -58,7 +63,7 @@ export class ScreeningService {
   }
 
   // Function to handle user responses
-  async handleResponse(client: Client, response: string) {
+  private async handleResponse(client: Client, response: string) {
     const questionIndex = client.currentQuestionIndex;
     const question = this.depressionQuestions.questions[questionIndex];
 
@@ -188,7 +193,7 @@ export class ScreeningService {
         where: { id: client.id },
         data: { screeningStatus: 'SCREENING' },
       });
-      await this.startScreening(client);
+      await this.handleResponse(client, message);
     } else {
       await this.whatsappService.sendWhatsappMessage(
         client.whatsapp_number,
@@ -276,7 +281,7 @@ export class ScreeningService {
         data: { screeningStatus: 'SCREENING', is_staying_with_someone: true },
       });
       //await this.handleScreeningResponse(client, 'Screening begins....');
-      await this.askNextQuestion(client);
+      await this.handleResponse(client, message);
     } else {
       await this.whatsappService.sendWhatsappMessage(
         client.whatsapp_number,
@@ -290,7 +295,7 @@ export class ScreeningService {
       data: { screeningStatus: 'SCREENING', someone_phone_number: message },
     });
     //await this.handleScreeningResponse(client, '');
-    await this.askNextQuestion(client);
+    await this.handleResponse(client, message);
   }
 
   private async startScreening(client: Client) {
