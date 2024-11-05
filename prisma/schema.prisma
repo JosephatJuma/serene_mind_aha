@@ -35,11 +35,11 @@ model Client {
   someone_phone_number    String?
   isScreened              Boolean?
   answer                  Answer[]
-  lastScreenDate DateTime?
-  currentQuestionIndex Number?
+  lastScreenDate          DateTime?
+  currentQuestionIndex    Int?
 
   @@unique([whatsapp_number])
-  @map("client")
+  @@map("client")
 }
 
 model Question {
@@ -49,19 +49,18 @@ model Question {
   parent   Question?  @relation("parent_to_child", fields: [parentId], references: [id])
   parentId String?
   children Question[] @relation("parent_to_child")
- 
 
   @@map("question")
 }
 
 model Answer {
-  id         String    @id @default(uuid())
-  addedAt    DateTime  @default(now())
-  answer    String    @db.VarChar(1000)
-  client     Client?   @relation(fields: [clientId], references: [id])
-  clientId   String?
+  id       String   @id @default(uuid())
+  addedAt  DateTime @default(now())
+  answer   String   @db.VarChar(1000)
+  client   Client?  @relation(fields: [clientId], references: [id])
+  clientId String?
 
-    @map("answer")
+  @@map("answer")
 }
 
 enum Status {
@@ -73,6 +72,6 @@ enum Status {
   NEXT_OF_KIN
   NEXT_OF_KIN_PHONE
   SCREENING
- DEPRESSION
- ANXIETY
+  DEPRESSION
+  ANXIETY
 }
