@@ -8,7 +8,8 @@ export class WhatsappService {
   constructor(private config: ConfigService) {}
 
   async sendWhatsappMessage(to: string, message: string) {
-    const response = await axios({
+    try {
+      const response = await axios({
       method: 'post',
       url: `https://graph.facebook.com/v21.0/${process.env.WA_PHONE_NUMBER_ID}/messages`,
       headers: {
@@ -27,10 +28,16 @@ export class WhatsappService {
     }
 
     return response.data;
+      
+    } catch (error) {
+      this.logger.error(error.message)
+    }
+    
   }
 
   async sendWhatsappTemplateMessage(to: string, template: string) {
-    const response = await axios({
+   try {
+     const response = await axios({
       method: 'post',
       url: `https://graph.facebook.com/v21.0/${process.env.WA_PHONE_NUMBER_ID}/messages`,
       headers: {
@@ -49,10 +56,9 @@ export class WhatsappService {
     });
     console.log(response);
     return response;
-  }
-
-  async handleStatusUpdate(payload: any) {
-    console.log(payload);
+   } catch (error) {
+    this.logger.log(error?.message)
+   }
   }
 
   async sendWhatsappInteractiveMessage(
@@ -60,7 +66,8 @@ export class WhatsappService {
     message: string,
     options: { id: string; title: string }[],
   ) {
-    const response = await axios({
+    try {
+      const response = await axios({
       method: 'post',
       url: `https://graph.facebook.com/v21.0/${process.env.WA_PHONE_NUMBER_ID}/messages`,
       headers: {
@@ -92,6 +99,9 @@ export class WhatsappService {
     if (response.status === 200) {
       this.logger.log('Interactive message sent');
       return response.data;
+    }
+    } catch (error) {
+      this.logger.error(error?.message)
     }
   }
 }
