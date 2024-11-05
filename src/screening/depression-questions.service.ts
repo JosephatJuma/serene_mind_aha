@@ -11,7 +11,7 @@ interface Question {
 }
 
 @Injectable()
-export class DepressionQuestionsClass {
+export class DepressionQuestions {
   private readonly defaultOptions: Option[] = [
     { text: 'Not at all (0-1 days)', score: 0 },
     { text: 'Several days (2-6 days)', score: 1 },

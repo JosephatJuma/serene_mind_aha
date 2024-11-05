@@ -5,7 +5,8 @@ import { VonageService } from 'src/vonage/vonage.service';
 import { ConfigService } from '@nestjs/config';
 import { PrismaClient } from '@prisma/client';
 import { ScreeningService } from 'src/screening/screening.service';
-import { DepressionQuestionsClass } from 'src/screening/depression-questions.service';
+import { DepressionQuestions } from 'src/screening/depression-questions.service';
+import { AncientQuestions } from 'src/screening/anxienty-questions.service';
 
 @Module({
   controllers: [WebhookController],
@@ -15,7 +16,8 @@ import { DepressionQuestionsClass } from 'src/screening/depression-questions.ser
     VonageService,
     ScreeningService,
     PrismaClient,
-    DepressionQuestionsClass,
+    DepressionQuestions,
+    AncientQuestions,
   ],
 })
 export class WebhookModule {}
