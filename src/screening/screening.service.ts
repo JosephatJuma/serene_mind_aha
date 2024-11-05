@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { WhatsappService } from 'src/whatsapp/whatsapp.service';
 import { PrismaClient, Client, Status } from '@prisma/client';
-import { DepressionQuestionsClass } from './depression-questions.service';
+import { DepressionQuestions } from './depression-questions.service';
 import { AncientQuestions } from './anxienty-questions.service';
 
 @Injectable()
@@ -9,7 +9,7 @@ export class ScreeningService {
   constructor(
     private whatsappService: WhatsappService,
     private prisma: PrismaClient,
-    private depressionQuestions: DepressionQuestionsClass,
+    private depressionQuestions: DepressionQuestions,
     private anxientQuestions: AncientQuestions,
   ) {}
   async handleIncomingMessage(message: any): Promise<void> {
@@ -64,6 +64,12 @@ export class ScreeningService {
 
   // Function to handle user responses
   private async handleResponse(client: Client, response: string) {
+    if(isNaN(parseInt(response))){
+      await this.whatsappService.sendWhatsappMessage(client.whatsapp_number, "Please select a right number")
+      await this.askNextQuestion(client)
+    }
+    else{
+
     const questionIndex = client.currentQuestionIndex;
     const question = this.depressionQuestions.questions[questionIndex];
 
@@ -103,11 +109,11 @@ export class ScreeningService {
         'Invalid response. Please reply with the number corresponding to your choice.',
       );
       await this.askNextQuestion(client); // Repeat the question
-    }
+    }}
   }
 
   // Function to calculate and send the final score
-  async calculateAndSendFinalScore(client: Client) {
+  private async calculateAndSendFinalScore(client: Client) {
     const responses = await this.prisma.clientResponse.findMany({
       where: { clientId: client.id },
     });
@@ -117,6 +123,7 @@ export class ScreeningService {
       0,
     );
     console.log(totalScore);
+    await this.prisma.client.update({where:{whatsapp_number:client.whatsapp_number}, data:{screeningStatus:"ANXIETY"}})
     await this.whatsappService.sendWhatsappMessage(
       client.whatsapp_number,
       `Thank you for your responses. Next Is Anxiety`,
@@ -124,14 +131,9 @@ export class ScreeningService {
   }
 
   private async processMessage(message: string, phoneNumber: string) {
-    console.log(message, phoneNumber);
-
     const client: Client = await this.prisma.client.findUnique({
       where: { whatsapp_number: phoneNumber },
     });
-
-    // const client=await this.prisma.client.create({data:{whatsapp_number:phoneNumber, name:'James'}})
-
     if (client == null) {
       await this.prisma.client.create({
         data: { whatsapp_number: phoneNumber, screeningStatus: Status.WELCOME },
@@ -166,13 +168,15 @@ export class ScreeningService {
           await this.handleNextOfKinPhoneResponse(client, message);
           break;
         case 'SCREENING':
-          //await this.handleScreeningResponse(client, message);
-          await this.askNextQuestion(client);
+          await this.handleScreeningResponse(client, message);
+          break;
+          case 'DEPRESSION':
+          await this.handleResponse(client, message)
           break;
         default:
           await this.whatsappService.sendWhatsappMessage(
             phoneNumber,
-            'Invalid state',
+            'Could not process the message',
           );
       }
     }
@@ -193,7 +197,7 @@ export class ScreeningService {
         where: { id: client.id },
         data: { screeningStatus: 'SCREENING' },
       });
-      await this.handleResponse(client, message);
+      await this.askNextQuestion(client)
     } else {
       await this.whatsappService.sendWhatsappMessage(
         client.whatsapp_number,
@@ -262,6 +266,7 @@ export class ScreeningService {
       'Are you staying with someone?',
     );
   }
+
   private async handleNextOfKinResponse(client: Client, message: string) {
     if (message.toLowerCase() == 'yes') {
       await this.prisma.client.update({
@@ -281,7 +286,7 @@ export class ScreeningService {
         data: { screeningStatus: 'SCREENING', is_staying_with_someone: true },
       });
       //await this.handleScreeningResponse(client, 'Screening begins....');
-      await this.handleResponse(client, message);
+      await this.askNextQuestion(client);
     } else {
       await this.whatsappService.sendWhatsappMessage(
         client.whatsapp_number,
@@ -294,32 +299,18 @@ export class ScreeningService {
       where: { id: client.id },
       data: { screeningStatus: 'SCREENING', someone_phone_number: message },
     });
-    //await this.handleScreeningResponse(client, '');
-    await this.handleResponse(client, message);
-  }
-
-  private async startScreening(client: Client) {
-    if (!client.isScreened) {
-      await this.whatsappService.sendWhatsappMessage(
-        client.whatsapp_number,
-        'Starting screening...',
-      );
-      // Implement screening questions logic here
-      // ...
-    } else {
-      await this.whatsappService.sendWhatsappMessage(
-        client.whatsapp_number,
-        'Thank you for completing the screening. A specialist will reach out to you soon.',
-      );
-    }
+    await this.whatsappService.sendWhatsappMessage(
+      client.whatsapp_number,
+      `Have you experienced any of the following in the past two weeks\nSelect all the applicable seperated with a comma(,)\n1.Persistent sadness\n2. Loss of interest/ pleasure in activities\n3. Change in appetite or weight loss\n4. Insomnia\n5. Feeling worthlessness`,
+    );
   }
 
   private async handleScreeningResponse(client: Client, message: string) {
-    // Implement screening question handling logic here
-    // ...
-    await this.whatsappService.sendWhatsappMessage(
-      client.whatsapp_number,
-      'Screening Begins....',
-    );
+    await this.prisma.client.update({
+      where: { id: client.id },
+      data: { screeningStatus: 'DEPRESSION', someone_phone_number: message },
+    });
+    
+    await this.askNextQuestion(client);
   }
 }
