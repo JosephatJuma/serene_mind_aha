@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable,Logger } from '@nestjs/common';
 import { WhatsappService } from 'src/whatsapp/whatsapp.service';
 import { PrismaClient, Client, Status } from '@prisma/client';
 import { DepressionQuestions } from './depression-questions.service';
@@ -7,6 +7,7 @@ import { IncomingMessageDto } from 'src/whatsapp/dto/message.dto';
 
 @Injectable()
 export class ScreeningService {
+   private logger = new Logger(ScreeningService.name);
   constructor(
     private whatsappService: WhatsappService,
     private prisma: PrismaClient,
@@ -15,7 +16,7 @@ export class ScreeningService {
   ) {}
   async handleIncomingMessage(message: IncomingMessageDto): Promise<void> {
     if (message.type === 'text') {
-      console.log(message)
+      this.logger.log("New message received")
       await this.processMessage(message.text.body, message.from, message?.timestamp);
     }
 
