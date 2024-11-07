@@ -51,13 +51,13 @@ export class ScreeningService {
     });
 
     // send instrunction when assessment begins
-    if (questionIndex === 0 && client.screeningStatus=="DEPRESSION") {
+    if (questionIndex === 0 && client.screeningStatus == 'DEPRESSION') {
       await this.whatsappService.sendWhatsappMessage(
         client.whatsapp_number,
         'Over the last two weeks, how often have you been bothered by any of the following problems? Please select the statements below to help me assess you better',
       );
     }
-      // Format question and options into a message
+    // Format question and options into a message
     const message =
       `${question.question}\n\n` +
       question.options
@@ -101,7 +101,7 @@ export class ScreeningService {
       );
       await this.repeatTheQuestion(client);
     } else {
-      const questionIndex = client.currentQuestionIndex;
+      const questionIndex = client.currentQuestionIndex - 1; //sub 1 since index is -1
       const question =
         client.screeningStatus === 'DEPRESSION'
           ? this.depressionQuestions.questions[questionIndex]
@@ -155,63 +155,102 @@ export class ScreeningService {
   }
 
   // Function to calculate and send the final score
- private async calculateAndSendFinalScore(client: Client) {
-  const newStatus: Status =
-    client.screeningStatus === 'DEPRESSION' ? 'ANXIETY' : 'COMPLETED';
-  const updatedClient = await this.prisma.client.update({
-    where: { whatsapp_number: client.whatsapp_number },
-    data: { screeningStatus: newStatus, currentQuestionIndex: 0 },
-  });
-
-  if (newStatus === 'ANXIETY') {
-    this.askNextQuestion(updatedClient);
-  } else {
-    const responses = await this.prisma.clientResponse.findMany({
-      where: {
-        clientId: client.id,
-        status: { in: ['DEPRESSION', 'ANXIETY'] },
-      },
+  private async calculateAndSendFinalScore(client: Client) {
+    const newStatus: Status =
+      client.screeningStatus === 'DEPRESSION' ? 'ANXIETY' : 'COMPLETED';
+    const updatedClient = await this.prisma.client.update({
+      where: { whatsapp_number: client.whatsapp_number },
+      data: { screeningStatus: newStatus, currentQuestionIndex: 0 },
     });
 
-    // Separate and calculate scores for depression and anxiety
-    const { depressionScore, anxietyScore } = responses.reduce(
-      (totals, response) => {
-        if (response.status === 'DEPRESSION') {
-          totals.depressionScore += response.score;
-        } else if (response.status === 'ANXIETY') {
-          totals.anxietyScore += response.score;
-        }
-        return totals;
-      },
-      { depressionScore: 0, anxietyScore: 0 }
-    );
+    if (newStatus === 'ANXIETY') {
+      this.askNextQuestion(updatedClient);
+    } else {
+      const responses = await this.prisma.clientResponse.findMany({
+        where: {
+          clientId: client.id,
+          status: { in: ['DEPRESSION', 'ANXIETY'] },
+        },
+      });
 
-    // Fetch scales in parallel
-    const [depressionScale, anxietyScale] = await Promise.all([
-      this.depressionQuestions.getDepressionScale(depressionScore),
-      this.anxientQuestions.getAnxietyScale(anxietyScore),
-    ]);
+      // Separate and calculate scores for depression and anxiety
+      const { depressionScore, anxietyScore } = responses.reduce(
+        (totals, response) => {
+          if (response.status === 'DEPRESSION') {
+            totals.depressionScore += response.score;
+          } else if (response.status === 'ANXIETY') {
+            totals.anxietyScore += response.score;
+          }
+          return totals;
+        },
+        { depressionScore: 0, anxietyScore: 0 },
+      );
 
-    // Save the result
-    const result = await this.prisma.assessmentResult.create({
-      data: {
-        anxietyScore,
-        depressionScore,
-        depressionScale,
-        anxietyScale,
-        clientId: client.id,
-      },
-    });
+      // Fetch scales in parallel
+      const [depressionScale, anxietyScale] = await Promise.all([
+        this.depressionQuestions.getDepressionScale(depressionScore),
+        this.anxientQuestions.getAnxietyScale(anxietyScore),
+      ]);
 
-    // Combine messages for better readability
-    const summaryMessage = `Thank you for your responses.\n\n*Your score is:*\n\nDepression: ${result.depressionScore}\nAnxiety: ${result.anxietyScore}`;
-    const finalMessage = `We have come to the end of our assessment and you did great! I want you to know that you are very brave for seeking help.\n\nPlease consider contacting us on the number provided should you need to speak with our psychiatric nurse, counsellor, or social worker. You should also consider attending the Mental Health Clinic which runs every Thursday at Access Centre in Kabuusu. Our team is waiting to support you. See you there. Bye.`;
+      // Save the result
+      const result = await this.prisma.assessmentResult.create({
+        data: {
+          anxietyScore,
+          depressionScore,
+          depressionScale,
+          anxietyScale,
+          clientId: client.id,
+        },
+      });
 
-    await this.whatsappService.sendWhatsappMessage(client.whatsapp_number, summaryMessage);
-    await this.whatsappService.sendWhatsappMessage(client.whatsapp_number, finalMessage);
+      // Combine messages for better readability
+      const summaryMessage = `Thank you for your responses.\n\n*Your score is:*\n\nDepression: ${result.depressionScore}\nAnxiety: ${result.anxietyScore}`;
+      const finalMessage = `We have come to the end of our assessment and you did great! I want you to know that you are very brave for seeking help.\n\nPlease consider contacting us on the number provided should you need to speak with our psychiatric nurse, counsellor, or social worker. You should also consider attending the Mental Health Clinic which runs every Thursday at Access Centre in Kabuusu. Our team is waiting to support you. See you there. Bye.`;
+
+      await this.whatsappService.sendWhatsappMessage(
+        client.whatsapp_number,
+        summaryMessage,
+      );
+      await this.whatsappService.sendWhatsappMessage(
+        client.whatsapp_number,
+        finalMessage,
+      );
+    }
   }
-}
 
+  private async sendDepressionResult(scale: Scale, client: Client) {
+    if (scale == 'MINIMAL_OR_NONE' || 'MILD') {
+      await this.whatsappService.sendWhatsappMessage(
+        client.whatsapp_number,
+        'Check out this video\n\nhttps://youtube.com/shorts/LYMpsu9WfQ0?feature=shar)',
+      );
+    }
+  }
+
+  private async sendAnxietyResult(scale: Scale, client: Client) {
+    if (scale == 'SEVERE') {
+      // await this.whatsappService.sendWhatsappMessage(
+      //   '',
+      //   `You have a Severe Depression case to attend to.\n\nClient Name: ${client.name}\n WhatsApp Number: ${client.whatsapp_number}\nAge: ${client.age}\nCategory: ${result.depressionScale.toLocaleLowerCase()}`,
+      // );
+      await this.whatsappService.sendWhatsappMessage(
+        client.whatsapp_number,
+        `Please come to the Kabuusu Access Centre for further analysis by the Psychiatrist Nurse/ Psychologist/ Psychiatrist.\n\n Watch this video in the mean-time\n\nhttps://youtu.be/FbFPq1bUKEY`,
+      );
+    }
+    if (scale == 'MINIMAL_OR_NONE' || 'MILD') {
+      await this.whatsappService.sendWhatsappMessage(
+        client.whatsapp_number,
+        `Watch this short video!\n\nhttps://youtu.be/WWloIAQpMcQ\n\n- Get someplace quiet and sit down.\n- Take note of the time\n- Take slow deep breathes while counting to 10, for 15-20 minutes. This should help you feel better\n- Have a glass of cool water\n\nIf after 20- 30 minutes, you are still feeling uneasy, please seek medical help at the nearest government aided health facility.`,
+      );
+    }
+    if (scale == 'MODERATELY_SEVERE' || 'MODERATE' || 'SEVERE') {
+      await this.whatsappService.sendWhatsappMessage(
+        client.whatsapp_number,
+        `Watch this short video!\n\nhttps://youtu.be/RWMCdP5Vujo?si=Lf0rRLTXUSUEy_6R\n\nModerate and severe Anxiety is manageable by our Mental Health Team at Kabuusu Access Centre. We run a clinic every Thursday from 9am to 4pm. You are most welcome!`,
+      );
+    }
+  }
 
   private async processMessage(
     message: string,
@@ -328,7 +367,7 @@ export class ScreeningService {
       await this.whatsappService.sendWhatsappInteractiveMessage(
         client.whatsapp_number,
         'What is your gender?',
-         [
+        [
           { id: '1', title: 'Male' },
           { id: '2', title: 'Female' },
         ],
@@ -366,9 +405,9 @@ export class ScreeningService {
       client.whatsapp_number,
       'Are you staying with someone?',
       [
-          { id: '1', title: 'Yes' },
-          { id: '2', title: 'No' },
-        ],
+        { id: '1', title: 'Yes' },
+        { id: '2', title: 'No' },
+      ],
     );
   }
 

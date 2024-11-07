@@ -59,10 +59,9 @@ export class DepressionQuestions {
     {
       question:
         'Thoughts that you would be better off dead or of hurting /killing yourself in some way',
-        //if yes administer the suicide assessment.
+      //if yes administer the suicide assessment.
       options: this.defaultOptions,
     },
-    { question: '', options: this.defaultOptions },
   ];
 
   public async getDepressionScale(value: number) {
