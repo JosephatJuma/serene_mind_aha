@@ -61,5 +61,6 @@ export class DepressionQuestions {
         'Thoughts that you would be better off dead or of hurting /killing yourself in some way if yes administer the suicide assessment.',
       options: this.defaultOptions,
     },
+    { question: '', options: this.defaultOptions },
   ];
 }

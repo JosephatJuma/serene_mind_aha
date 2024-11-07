@@ -1,4 +1,4 @@
-import { Injectable,Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { WhatsappService } from 'src/whatsapp/whatsapp.service';
 import { PrismaClient, Client, Status } from '@prisma/client';
 import { DepressionQuestions } from './depression-questions.service';
@@ -7,38 +7,36 @@ import { IncomingMessageDto } from 'src/whatsapp/dto/message.dto';
 
 @Injectable()
 export class ScreeningService {
-   private logger = new Logger(ScreeningService.name);
+  private logger = new Logger(ScreeningService.name);
   constructor(
     private whatsappService: WhatsappService,
     private prisma: PrismaClient,
     private depressionQuestions: DepressionQuestions,
     private anxientQuestions: AncientQuestions,
   ) {}
-  async handleIncomingMessage(message: IncomingMessageDto): Promise<void> {
+  async handleIncomingMessage(message: any): Promise<void> {
+    console.log(message);
     if (message.type === 'text') {
-      this.logger.log("New message received")
-      await this.processMessage(message.text.body, message.from, message?.timestamp);
-    }
-
-    // else if (message.type == 'options') {
-    //   await this.whatsappService.sendWhatsappInteractiveMessage(
-    //     message.from,
-    //     'Over the last two weeks, how often have you been bothered by any of the following problems? Please select/ tick the statements below to help me assess you better:\n\nLittle interest/ pleasure in doing things\n',
-    //     [
-    //       { id: '1', title: 'Not at all' },
-    //       { id: '2', title: 'Several days' },
-    //       { id: '3', title: 'Nearly everyday' },
-    //       // { id: '4', title: 'More than half' },
-    //     ],
-    //   );
-    // }
-    else {
+      this.logger.log('New message received');
+      await this.processMessage(
+        message.text.body,
+        message.from,
+        message?.timestamp,
+      );
+    } else if (message.type == 'interactive') {
+      await this.processMessage(
+        message?.interactive.button_reply?.title,
+        message.from,
+        message?.timestamp,
+      );
+    } else {
       await this.whatsappService.sendWhatsappMessage(
         message.from,
-        'Could not process message, please a text message',
+        'Could not process message, please send a text message',
       );
     }
   }
+  // Function to send the next question based on the client's progress
   // Function to send the next question based on the client's progress
   private async askNextQuestion(client: Client) {
     const questionIndex = client.currentQuestionIndex ?? 0;
@@ -52,8 +50,32 @@ export class ScreeningService {
       data: { currentQuestionIndex: questionIndex + 1 },
     });
     // Format question and options into a message
+    if (questionIndex === 0) {
+      await this.whatsappService.sendWhatsappMessage(
+        client.whatsapp_number,
+        'Over the last two weeks, how often have you been bothered by any of the following problems? Please select the statements below to help me assess you better',
+      );
+    }
     const message =
-      `${questionIndex === 0 ? 'Over the last two weeks, how often have you been bothered by any of the following problems? Please select the statements below to help me assess you better:\n\n' : ''}${question.question}\n` +
+      `${question.question}\n\n` +
+      question.options
+        .map((opt: any, index: number) => `${index + 1}. ${opt.text}`)
+        .join('\n');
+
+    await this.whatsappService.sendWhatsappMessage(
+      client.whatsapp_number,
+      message,
+    );
+  }
+  private async repeatTheQuestion(client: Client) {
+    const questionIndex = client.currentQuestionIndex ?? 0;
+
+    const question =
+      client.screeningStatus === 'DEPRESSION'
+        ? this.depressionQuestions.questions[questionIndex - 1]
+        : this.anxientQuestions.questions[questionIndex - 1];
+    const message =
+      `${question.question}\n\n` +
       question.options
         .map((opt: any, index: number) => `${index + 1}. ${opt.text}`)
         .join('\n');
@@ -65,62 +87,67 @@ export class ScreeningService {
   }
 
   // Function to handle user responses
-  private async handleResponse(client: Client, response: string, timestamp:number) {
+  private async handleResponse(
+    client: Client,
+    response: string,
+    timestamp: number,
+  ) {
     if (isNaN(parseInt(response))) {
       await this.whatsappService.sendWhatsappMessage(
         client.whatsapp_number,
         'Please select a right number',
       );
-      await this.askNextQuestion(client);
+      await this.repeatTheQuestion(client);
     } else {
       const questionIndex = client.currentQuestionIndex;
       const question =
         client.screeningStatus === 'DEPRESSION'
           ? this.depressionQuestions.questions[questionIndex]
           : this.anxientQuestions.questions[questionIndex];
+      if (question) {
+        // Convert response to an index
+        const selectedOption = parseInt(response) - 1;
 
-      // Convert response to an index
-      const selectedOption = parseInt(response) - 1;
+        if (selectedOption >= 0 && selectedOption < question.options.length) {
+          const score = question.options[selectedOption].score;
 
-      if (selectedOption >= 0 && selectedOption <= question.options.length) {
-        const score = question.options[selectedOption].score;
-
-        // Store response and score in the database
-        await this.prisma.clientResponse.create({
-          data: {
-            clientId: client.id,
-            question: question.question,
-            answer: question.options[selectedOption].text,
-            score: score,
-            status: client.screeningStatus,
-            timestamp:timestamp
-          },
-        });
-
-        // Update the client's question progress
-        const questionLength =
-          client.screeningStatus === 'DEPRESSION'
-            ? this.depressionQuestions.questions.length - 1
-            : this.anxientQuestions.questions.length - 1;
-        if (questionIndex < questionLength) {
-          await this.prisma.client.update({
-            where: { id: client.id },
-            data: { currentQuestionIndex: questionIndex + 1 },
+          // Store response and score in the database
+          await this.prisma.clientResponse.create({
+            data: {
+              clientId: client.id,
+              question: question.question,
+              answer: question.options[selectedOption].text,
+              score: score,
+              status: client.screeningStatus,
+              timestamp: timestamp,
+            },
           });
 
-          // Ask the next question
-          await this.askNextQuestion(client);
+          // Update the client's question progress
+          const questionLength =
+            client.screeningStatus === 'DEPRESSION'
+              ? this.depressionQuestions.questions.length - 1
+              : this.anxientQuestions.questions.length - 1;
+          if (questionIndex < questionLength) {
+            await this.prisma.client.update({
+              where: { id: client.id },
+              data: { currentQuestionIndex: questionIndex + 1 },
+            });
+
+            // Ask the next question
+            await this.askNextQuestion(client);
+          } else {
+            // All questions completed - calculate the final score
+            await this.calculateAndSendFinalScore(client);
+          }
         } else {
-          // All questions completed - calculate the final score
-          await this.calculateAndSendFinalScore(client);
+          // Send an error message if the response is invalid
+          await this.whatsappService.sendWhatsappMessage(
+            client.whatsapp_number,
+            'Invalid response. Please reply with the number corresponding to your choice.',
+          );
+          await this.repeatTheQuestion(client); // Repeat the question
         }
-      } else {
-        // Send an error message if the response is invalid
-        await this.whatsappService.sendWhatsappMessage(
-          client.whatsapp_number,
-          'Invalid response. Please reply with the number corresponding to your choice.',
-        );
-        await this.askNextQuestion(client); // Repeat the question
       }
     }
   }
@@ -138,17 +165,29 @@ export class ScreeningService {
     // console.log(totalScore);
     const newStatus: Status =
       client.screeningStatus === 'DEPRESSION' ? 'ANXIETY' : 'COMPLETED';
-    await this.prisma.client.update({
+    const updatedClient = await this.prisma.client.update({
       where: { whatsapp_number: client.whatsapp_number },
-      data: { screeningStatus: newStatus },
+      data: { screeningStatus: newStatus, currentQuestionIndex: 0 },
     });
     await this.whatsappService.sendWhatsappMessage(
       client.whatsapp_number,
       `Thank you for your responses. Your score is ${totalScore}`,
     );
+    if (newStatus == 'ANXIETY') {
+      this.askNextQuestion(updatedClient);
+    } else {
+      this.whatsappService.sendWhatsappMessage(
+        client.whatsapp_number,
+        'You have come to the end of the screeing',
+      );
+    }
   }
 
-  private async processMessage(message: string, phoneNumber: string, timestamp:number) {
+  private async processMessage(
+    message: string,
+    phoneNumber: string,
+    timestamp: number,
+  ) {
     const client: Client = await this.prisma.client.findUnique({
       where: { whatsapp_number: phoneNumber },
     });
@@ -188,8 +227,14 @@ export class ScreeningService {
           await this.handleScreeningResponse(client, message);
           break;
         case 'DEPRESSION':
-        case "ANXIETY":
-          await this.handleResponse(client, message,timestamp);
+        case 'ANXIETY':
+          await this.handleResponse(client, message, timestamp);
+          break;
+        case 'COMPLETED':
+          await this.whatsappService.sendWhatsappMessage(
+            phoneNumber,
+            'Thanks for taking time to do the mental health assessment\n\nYou have already done an assessment recently, you can carryout another assessment after two weeks',
+          );
           break;
         default:
           await this.whatsappService.sendWhatsappMessage(
@@ -215,7 +260,7 @@ export class ScreeningService {
         where: { id: client.id },
         data: { screeningStatus: 'SCREENING' },
       });
-      await this.askNextQuestion(client);
+      return this.sendScreeningQuestion(client);
     } else {
       await this.whatsappService.sendWhatsappMessage(
         client.whatsapp_number,
@@ -303,8 +348,8 @@ export class ScreeningService {
         where: { id: client.id },
         data: { screeningStatus: 'SCREENING', is_staying_with_someone: true },
       });
-      //await this.handleScreeningResponse(client, 'Screening begins....');
-      await this.askNextQuestion(client);
+      //Screen Question
+      return this.sendScreeningQuestion(client);
     } else {
       await this.whatsappService.sendWhatsappMessage(
         client.whatsapp_number,
@@ -317,18 +362,44 @@ export class ScreeningService {
       where: { id: client.id },
       data: { screeningStatus: 'SCREENING', someone_phone_number: message },
     });
-    await this.whatsappService.sendWhatsappMessage(
+    return this.sendScreeningQuestion(client);
+    // await this.whatsappService.sendWhatsappMessage(
+    //   client.whatsapp_number,
+    //   `Have you experienced any of the following in the past two weeks\n\n1.Persistent sadness\n2. Loss of interest/ pleasure in activities\n3. Change in appetite or weight loss\n4. Insomnia\n5. Feeling worthlessness`,
+    // );
+  }
+  private async sendScreeningQuestion(client: Client) {
+    // await this.whatsappService.sendWhatsappMessage(
+    //     client.whatsapp_number,
+    //     `Have you experienced any of the following in the past two weeks\n\n1. Persistent sadness\n2. Loss of interest/ pleasure in activities\n3. Change in appetite or weight loss\n4. Insomnia\n5. Feeling worthlessness`,
+    //   );
+    await this.whatsappService.sendWhatsappInteractiveMessage(
       client.whatsapp_number,
-      `Have you experienced any of the following in the past two weeks\nSelect all the applicable seperated with a comma(,)\n1.Persistent sadness\n2. Loss of interest/ pleasure in activities\n3. Change in appetite or weight loss\n4. Insomnia\n5. Feeling worthlessness`,
+      `Have you experienced any of the following in the past two weeks\n\n1. Persistent sadness\n2. Loss of interest/ pleasure in activities\n3. Change in appetite or weight loss\n4. Insomnia\n5. Feeling worthlessness`,
+      [
+        { id: '1', title: 'Yes' },
+        { id: '2', title: 'No' },
+        //{ id: '3', title: 'Nearly everyday' },
+        // { id: '4', title: 'More than half' },
+      ],
     );
   }
-
   private async handleScreeningResponse(client: Client, message: string) {
-    await this.prisma.client.update({
+    const updateDClient = await this.prisma.client.update({
       where: { id: client.id },
-      data: { screeningStatus: 'DEPRESSION', someone_phone_number: message },
+      data: { screeningStatus: 'DEPRESSION' },
+    });
+    await this.prisma.clientResponse.create({
+      data: {
+        clientId: client.id,
+        status: Status.SCREENING,
+        score: 0,
+        answer: message,
+        question:
+          'Have you experienced any of the following in the past two weeks',
+      },
     });
 
-    await this.askNextQuestion(client);
+    await this.askNextQuestion(updateDClient);
   }
 }
