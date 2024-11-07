@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-
+import { Scale } from '@prisma/client';
 interface Option {
   text: string;
   score: number;
@@ -47,4 +47,16 @@ export class AncientQuestions {
     },
     { question: '', options: this.defaultOptions },
   ];
+
+  public async getAnxietyScale(value: number) {
+    if (value >= 0 && value <= 4) {
+      return Scale.MINIMAL_OR_NONE;
+    } else if (value >= 5 && value <= 9) {
+      return Scale.MILD;
+    } else if (value >= 10 && value <= 12) {
+      return Scale.MODERATE;
+    } else {
+      return Scale.SEVERE;
+    }
+  }
 }

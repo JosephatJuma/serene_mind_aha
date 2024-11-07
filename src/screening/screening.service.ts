@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { WhatsappService } from 'src/whatsapp/whatsapp.service';
-import { PrismaClient, Client, Status } from '@prisma/client';
+import { PrismaClient, Client, Status, Scale } from '@prisma/client';
 import { DepressionQuestions } from './depression-questions.service';
 import { AncientQuestions } from './anxienty-questions.service';
 import { IncomingMessageDto } from 'src/whatsapp/dto/message.dto';
@@ -49,13 +49,15 @@ export class ScreeningService {
       where: { whatsapp_number: client.whatsapp_number },
       data: { currentQuestionIndex: questionIndex + 1 },
     });
-    // Format question and options into a message
-    if (questionIndex === 0) {
+
+    // send instrunction when assessment begins
+    if (questionIndex === 0 && client.screeningStatus=="DEPRESSION") {
       await this.whatsappService.sendWhatsappMessage(
         client.whatsapp_number,
         'Over the last two weeks, how often have you been bothered by any of the following problems? Please select the statements below to help me assess you better',
       );
     }
+      // Format question and options into a message
     const message =
       `${question.question}\n\n` +
       question.options
@@ -153,37 +155,63 @@ export class ScreeningService {
   }
 
   // Function to calculate and send the final score
-  private async calculateAndSendFinalScore(client: Client) {
+ private async calculateAndSendFinalScore(client: Client) {
+  const newStatus: Status =
+    client.screeningStatus === 'DEPRESSION' ? 'ANXIETY' : 'COMPLETED';
+  const updatedClient = await this.prisma.client.update({
+    where: { whatsapp_number: client.whatsapp_number },
+    data: { screeningStatus: newStatus, currentQuestionIndex: 0 },
+  });
+
+  if (newStatus === 'ANXIETY') {
+    this.askNextQuestion(updatedClient);
+  } else {
     const responses = await this.prisma.clientResponse.findMany({
-      where: { clientId: client.id, status: client.screeningStatus },
+      where: {
+        clientId: client.id,
+        status: { in: ['DEPRESSION', 'ANXIETY'] },
+      },
     });
 
-    const totalScore = responses.reduce(
-      (sum, response) => sum + response.score,
-      0,
+    // Separate and calculate scores for depression and anxiety
+    const { depressionScore, anxietyScore } = responses.reduce(
+      (totals, response) => {
+        if (response.status === 'DEPRESSION') {
+          totals.depressionScore += response.score;
+        } else if (response.status === 'ANXIETY') {
+          totals.anxietyScore += response.score;
+        }
+        return totals;
+      },
+      { depressionScore: 0, anxietyScore: 0 }
     );
-    // console.log(totalScore);
-    const newStatus: Status =
-      client.screeningStatus === 'DEPRESSION' ? 'ANXIETY' : 'COMPLETED';
-    const updatedClient = await this.prisma.client.update({
-      where: { whatsapp_number: client.whatsapp_number },
-      data: { screeningStatus: newStatus, currentQuestionIndex: 0 },
+
+    // Fetch scales in parallel
+    const [depressionScale, anxietyScale] = await Promise.all([
+      this.depressionQuestions.getDepressionScale(depressionScore),
+      this.anxientQuestions.getAnxietyScale(anxietyScore),
+    ]);
+
+    // Save the result
+    const result = await this.prisma.assessmentResult.create({
+      data: {
+        anxietyScore,
+        depressionScore,
+        depressionScale,
+        anxietyScale,
+        clientId: client.id,
+      },
     });
-    
-    if (newStatus == 'ANXIETY') {
-      this.askNextQuestion(updatedClient);
-    } else {
-      await this.whatsappService.sendWhatsappMessage(
-      client.whatsapp_number,
-      `Thank you for your responses. Your score is ${totalScore}`,
-    );
-      this.whatsappService.sendWhatsappMessage(
-        client.whatsapp_number,
-        `We have come to the end of our assessment and you did great! I want you to know that you are very brave for seeking help.\n\nPlease consider contacting us on the number provided should you need to speak our psychiatric nurse, counsellor or social worker. You should also consider attending the Mental Health Clinic which runs every Thursday at Access Centre in Kabuusu. Our team is waiting to support you. See you there. Bye.
-`,
-      );
-    }
+
+    // Combine messages for better readability
+    const summaryMessage = `Thank you for your responses.\n\n*Your score is:*\n\nDepression: ${result.depressionScore}\nAnxiety: ${result.anxietyScore}`;
+    const finalMessage = `We have come to the end of our assessment and you did great! I want you to know that you are very brave for seeking help.\n\nPlease consider contacting us on the number provided should you need to speak with our psychiatric nurse, counsellor, or social worker. You should also consider attending the Mental Health Clinic which runs every Thursday at Access Centre in Kabuusu. Our team is waiting to support you. See you there. Bye.`;
+
+    await this.whatsappService.sendWhatsappMessage(client.whatsapp_number, summaryMessage);
+    await this.whatsappService.sendWhatsappMessage(client.whatsapp_number, finalMessage);
   }
+}
+
 
   private async processMessage(
     message: string,
@@ -197,9 +225,13 @@ export class ScreeningService {
       await this.prisma.client.create({
         data: { whatsapp_number: phoneNumber, screeningStatus: Status.WELCOME },
       });
-      return await this.whatsappService.sendWhatsappMessage(
+      return await this.whatsappService.sendWhatsappInteractiveMessage(
         phoneNumber,
         'Hello there 👋\n\nWelcome to the AHA mental health online platform. My name is Serene Mind AHA, your health partner. Please note that we value your privacy and that whatever you share here is highly confidential.\n\nWould you tell me about yourself?',
+        [
+          { id: '1', title: 'Yes' },
+          { id: '2', title: 'No' },
+        ],
       );
     } else {
       switch (client.screeningStatus) {
@@ -293,9 +325,13 @@ export class ScreeningService {
         where: { id: client.id },
         data: { screeningStatus: 'GENDER', age: parseInt(message) },
       });
-      await this.whatsappService.sendWhatsappMessage(
+      await this.whatsappService.sendWhatsappInteractiveMessage(
         client.whatsapp_number,
         'What is your gender?',
+         [
+          { id: '1', title: 'Male' },
+          { id: '2', title: 'Female' },
+        ],
       );
     }
   }
@@ -326,9 +362,13 @@ export class ScreeningService {
       where: { id: client.id },
       data: { screeningStatus: 'NEXT_OF_KIN', location: message },
     });
-    await this.whatsappService.sendWhatsappMessage(
+    await this.whatsappService.sendWhatsappInteractiveMessage(
       client.whatsapp_number,
       'Are you staying with someone?',
+      [
+          { id: '1', title: 'Yes' },
+          { id: '2', title: 'No' },
+        ],
     );
   }
 
@@ -371,18 +411,12 @@ export class ScreeningService {
     // );
   }
   private async sendScreeningQuestion(client: Client) {
-    // await this.whatsappService.sendWhatsappMessage(
-    //     client.whatsapp_number,
-    //     `Have you experienced any of the following in the past two weeks\n\n1. Persistent sadness\n2. Loss of interest/ pleasure in activities\n3. Change in appetite or weight loss\n4. Insomnia\n5. Feeling worthlessness`,
-    //   );
     await this.whatsappService.sendWhatsappInteractiveMessage(
       client.whatsapp_number,
       `Have you experienced any of the following in the past two weeks\n\n1. Persistent sadness\n2. Loss of interest/ pleasure in activities\n3. Change in appetite or weight loss\n4. Insomnia\n5. Feeling worthlessness`,
       [
         { id: '1', title: 'Yes' },
         { id: '2', title: 'No' },
-        //{ id: '3', title: 'Nearly everyday' },
-        // { id: '4', title: 'More than half' },
       ],
     );
   }
