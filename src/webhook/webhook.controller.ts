@@ -1,10 +1,21 @@
 // whatsapp.controller.ts
-import { Controller, Post, Body, Res, Query, Get, Logger, Req,HttpException,HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Res,
+  Query,
+  Get,
+  Logger,
+  Req,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { ApiTags, ApiResponse, ApiBody } from '@nestjs/swagger';
 import * as process from 'node:process';
 import { ScreeningService } from 'src/screening/screening.service';
-import * as crypto from 'crypto'
+import * as crypto from 'crypto';
 
 @Controller('webhook')
 @ApiTags('Webhook')
@@ -37,7 +48,7 @@ export class WebhookController {
         text: {
           type: 'object',
           description: ' the text message object if the type value is text',
-          example:  { body: 'Hi' },
+          example: { body: 'Hi' },
         },
         type: {
           type: 'string',
@@ -61,7 +72,7 @@ export class WebhookController {
     const xHubSignature = req.headers['x-hub-signature'];
     const appSecret = process.env.WHATSAPP_CLOUD_API_WEBHOOK_VERIFICATION_TOKEN;
     if (!xHubSignature || !appSecret) {
-      Logger.warn("Invalid Source")
+      Logger.warn('Invalid Source');
       throw new HttpException('Invalid signature', HttpStatus.FORBIDDEN);
     }
     // Extract the actual signature value from the header
@@ -79,7 +90,6 @@ export class WebhookController {
     if (!messages) return;
     const message = messages[0];
     this.screnning.handleIncomingMessage(message);
-   
   }
 
   @Get()
