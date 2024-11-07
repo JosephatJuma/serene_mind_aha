@@ -10,55 +10,53 @@ export class WhatsappService {
   async sendWhatsappMessage(to: string, message: string) {
     try {
       const response = await axios({
-      method: 'post',
-      url: `https://graph.facebook.com/v21.0/${process.env.WA_PHONE_NUMBER_ID}/messages`,
-      headers: {
-        Authorization: `Bearer ${this.config.get('CLOUD_API_ACCESS_TOKEN')}`,
-        'Content-Type': 'application/json',
-      },
-      data: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to: to,
-        type: 'text',
-        text: { body: message },
-      }),
-    });
-    if (response.status === 200) {
-      return response.data;
-    }
+        method: 'post',
+        url: `https://graph.facebook.com/v21.0/${process.env.WA_PHONE_NUMBER_ID}/messages`,
+        headers: {
+          Authorization: `Bearer ${this.config.get('CLOUD_API_ACCESS_TOKEN')}`,
+          'Content-Type': 'application/json',
+        },
+        data: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: to,
+          type: 'text',
+          text: { body: message },
+        }),
+      });
+      if (response.status === 200) {
+        return response.data;
+      }
 
-    return response.data;
-      
+      return response.data;
     } catch (error) {
-      this.logger.error(error.message)
+      this.logger.error(error.message);
     }
-    
   }
 
   async sendWhatsappTemplateMessage(to: string, template: string) {
-   try {
-     const response = await axios({
-      method: 'post',
-      url: `https://graph.facebook.com/v21.0/${process.env.WA_PHONE_NUMBER_ID}/messages`,
-      headers: {
-        Authorization: `Bearer ${process.env.CLOUD_API_ACCESS_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      data: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to: to,
-        type: 'template',
-        template: {
-          name: template,
-          language: { code: 'en_US' },
+    try {
+      const response = await axios({
+        method: 'post',
+        url: `https://graph.facebook.com/v21.0/${process.env.WA_PHONE_NUMBER_ID}/messages`,
+        headers: {
+          Authorization: `Bearer ${process.env.CLOUD_API_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
         },
-      }),
-    });
-    console.log(response);
-    return response;
-   } catch (error) {
-    this.logger.log(error?.message)
-   }
+        data: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: to,
+          type: 'template',
+          template: {
+            name: template,
+            language: { code: 'en_US' },
+          },
+        }),
+      });
+      console.log(response);
+      return response;
+    } catch (error) {
+      this.logger.log(error?.message);
+    }
   }
 
   async sendWhatsappInteractiveMessage(
@@ -68,40 +66,40 @@ export class WhatsappService {
   ) {
     try {
       const response = await axios({
-      method: 'post',
-      url: `https://graph.facebook.com/v21.0/${process.env.WA_PHONE_NUMBER_ID}/messages`,
-      headers: {
-        Authorization: `Bearer ${this.config.get('CLOUD_API_ACCESS_TOKEN')}`,
-        'Content-Type': 'application/json',
-      },
-      data: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to: to,
-        type: 'interactive',
-        interactive: {
-          type: 'button', // 'list' if you prefer a list format
-          body: {
-            text: message,
-          },
-          action: {
-            buttons: options.map((option) => ({
-              type: 'reply',
-              reply: {
-                id: option.id,
-                title: option.title,
-              },
-            })),
-          },
+        method: 'post',
+        url: `https://graph.facebook.com/v21.0/${process.env.WA_PHONE_NUMBER_ID}/messages`,
+        headers: {
+          Authorization: `Bearer ${this.config.get('CLOUD_API_ACCESS_TOKEN')}`,
+          'Content-Type': 'application/json',
         },
-      }),
-    });
+        data: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: to,
+          type: 'interactive',
+          interactive: {
+            type: 'button', // 'list' if you prefer a list format
+            body: {
+              text: message,
+            },
+            action: {
+              buttons: options.map((option) => ({
+                type: 'reply',
+                reply: {
+                  id: option.id,
+                  title: option.title,
+                },
+              })),
+            },
+          },
+        }),
+      });
 
-    if (response.status === 200) {
-      this.logger.log('Interactive message sent');
-      return response.data;
-    }
+      if (response.status === 200) {
+        this.logger.log('Interactive message sent');
+        return response.data;
+      }
     } catch (error) {
-      this.logger.error(error?.message)
+      this.logger.error(error?.message);
     }
   }
 }
