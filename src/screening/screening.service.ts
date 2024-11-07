@@ -169,16 +169,18 @@ export class ScreeningService {
       where: { whatsapp_number: client.whatsapp_number },
       data: { screeningStatus: newStatus, currentQuestionIndex: 0 },
     });
-    await this.whatsappService.sendWhatsappMessage(
-      client.whatsapp_number,
-      `Thank you for your responses. Your score is ${totalScore}`,
-    );
+    
     if (newStatus == 'ANXIETY') {
       this.askNextQuestion(updatedClient);
     } else {
+      await this.whatsappService.sendWhatsappMessage(
+      client.whatsapp_number,
+      `Thank you for your responses. Your score is ${totalScore}`,
+    );
       this.whatsappService.sendWhatsappMessage(
         client.whatsapp_number,
-        'You have come to the end of the screeing',
+        `We have come to the end of our assessment and you did great! I want you to know that you are very brave for seeking help.\n\nPlease consider contacting us on the number provided should you need to speak our psychiatric nurse, counsellor or social worker. You should also consider attending the Mental Health Clinic which runs every Thursday at Access Centre in Kabuusu. Our team is waiting to support you. See you there. Bye.
+`,
       );
     }
   }
