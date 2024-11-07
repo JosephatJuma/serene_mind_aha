@@ -19,6 +19,6 @@ import { ScreeningModule } from './screening/screening.module';
     ScreeningModule,
   ],
   controllers: [],
-  providers: [AppService,  ConfigService],
+  providers: [AppService, ConfigService],
 })
 export class AppModule {}
