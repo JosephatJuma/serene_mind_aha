@@ -84,6 +84,7 @@ enum Scale {
   SEVERE
   MILD
   MODERATE
+  MODERATELY_SEVERE
 }
 
 model AssessmentResult {
@@ -92,8 +93,8 @@ model AssessmentResult {
   clientId        String
   depressionScore Int?
   depressionScale Scale?
-  axientyScore    Int?
-  axientyScale    Scale?
+  anxietyScore    Int?
+  anxietyScale    Scale?
   period          DateTime @default(now())
 
   @@map("assessment")
