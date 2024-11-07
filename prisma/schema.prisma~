@@ -31,7 +31,7 @@ model Client {
   location                String?
   is_staying_with_someone Boolean?
   someone_phone_number    String?
-  is_creened              Boolean?
+  isScreened              Boolean?
   responses               ClientResponse[]
   currentQuestionIndex    Int?
   results                 AssessmentResult[]
