@@ -45,5 +45,6 @@ export class AncientQuestions {
       question: 'Feeling afraid, as if something awful might happen',
       options: this.defaultOptions,
     },
+    { question: '', options: this.defaultOptions },
   ];
 }
