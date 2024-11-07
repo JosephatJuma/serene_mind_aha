@@ -49,4 +49,5 @@ export type IncomingMessageDto = {
   audio?: AudioMessage;
   image?: ImageMessage;
   video?: VideoMessage;
+  interactive: Object;
 };
