@@ -202,6 +202,8 @@ export class ScreeningService {
           clientId: client.id,
         },
       });
+      await this.sendAnxietyResult(result.anxietyScale, client);
+      await this.sendDepressionResult(result.depressionScale, client);
 
       // Combine messages for better readability
       const summaryMessage = `Thank you for your responses.\n\n*Your score is:*\n\nDepression: ${result.depressionScore}\nAnxiety: ${result.anxietyScore}`;
@@ -250,6 +252,21 @@ export class ScreeningService {
         `Watch this short video!\n\nhttps://youtu.be/RWMCdP5Vujo?si=Lf0rRLTXUSUEy_6R\n\nModerate and severe Anxiety is manageable by our Mental Health Team at Kabuusu Access Centre. We run a clinic every Thursday from 9am to 4pm. You are most welcome!`,
       );
     }
+  }
+
+  private async confirmViewResults(client: Client) {
+    // await this.prisma.client.update({
+    //   where: { id: client.id },
+    //   data: { screeningStatus: 'NEXT_OF_KIN', location: message },
+    // });
+    await this.whatsappService.sendWhatsappInteractiveMessage(
+      client.whatsapp_number,
+      `Your assessment from our interaction is nearly ready, remember this doesn’t replace a professional examination. I encourage you to visit the UNHCR Access Centre for a more detailed assessment and support with our experienced psychiatrist, nurses, counsellors and social workers.\n\nAre you ready to review your assessment?`,
+      [
+        { id: '1', title: 'Let’s do it' },
+        { id: '2', title: 'Not Now' },
+      ],
+    );
   }
 
   private async processMessage(
