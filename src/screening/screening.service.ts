@@ -3,7 +3,7 @@ import { WhatsappService } from 'src/whatsapp/whatsapp.service';
 import { PrismaClient, Client, Status, Scale } from '@prisma/client';
 import { DepressionQuestions } from './depression-questions.service';
 import { AncientQuestions } from './anxienty-questions.service';
-import { IncomingMessageDto } from 'src/whatsapp/dto/message.dto';
+// import { IncomingMessageDto } from 'src/whatsapp/dto/message.dto';
 
 @Injectable()
 export class ScreeningService {
@@ -12,7 +12,7 @@ export class ScreeningService {
     private whatsappService: WhatsappService,
     private prisma: PrismaClient,
     private depressionQuestions: DepressionQuestions,
-    private anxientQuestions: AncientQuestions,
+    private anxietyQuestions: AncientQuestions,
   ) {}
   async handleIncomingMessage(message: any): Promise<void> {
     if (message.type === 'text') {
@@ -43,13 +43,13 @@ export class ScreeningService {
     const question =
       client.screeningStatus === 'DEPRESSION'
         ? this.depressionQuestions.questions[questionIndex]
-        : this.anxientQuestions.questions[questionIndex];
+        : this.anxietyQuestions.questions[questionIndex];
     await this.prisma.client.update({
       where: { whatsapp_number: client.whatsapp_number },
       data: { currentQuestionIndex: questionIndex + 1 },
     });
 
-    // send instrunction when assessment begins
+    // send instruction when assessment begins
     if (questionIndex === 0 && client.screeningStatus == 'DEPRESSION') {
       await this.whatsappService.sendWhatsappMessage(
         client.whatsapp_number,
@@ -74,7 +74,7 @@ export class ScreeningService {
     const question =
       client.screeningStatus === 'DEPRESSION'
         ? this.depressionQuestions.questions[questionIndex - 1]
-        : this.anxientQuestions.questions[questionIndex - 1];
+        : this.anxietyQuestions.questions[questionIndex - 1];
     const message =
       `${question.question}\n\n` +
       question.options
@@ -104,7 +104,7 @@ export class ScreeningService {
       const question =
         client.screeningStatus === 'DEPRESSION'
           ? this.depressionQuestions.questions[questionIndex]
-          : this.anxientQuestions.questions[questionIndex];
+          : this.anxietyQuestions.questions[questionIndex];
       if (question) {
         // Convert response to an index
         const selectedOption = parseInt(response) - 1;
@@ -128,7 +128,7 @@ export class ScreeningService {
           const questionLength =
             client.screeningStatus === 'DEPRESSION'
               ? this.depressionQuestions.questions.length - 1
-              : this.anxientQuestions.questions.length - 1;
+              : this.anxietyQuestions.questions.length - 1;
           if (questionIndex < questionLength) {
             await this.prisma.client.update({
               where: { id: client.id },
@@ -163,7 +163,7 @@ export class ScreeningService {
     });
 
     if (newStatus === 'ANXIETY') {
-      this.askNextQuestion(updatedClient);
+      await this.askNextQuestion(updatedClient);
     } else {
       const responses = await this.prisma.clientResponse.findMany({
         where: {
@@ -188,7 +188,7 @@ export class ScreeningService {
       // Fetch scales in parallel
       const [depressionScale, anxietyScale] = await Promise.all([
         this.depressionQuestions.getDepressionScale(depressionScore),
-        this.anxientQuestions.getAnxietyScale(anxietyScore),
+        this.anxietyQuestions.getAnxietyScale(anxietyScore),
       ]);
 
       // Save the result
@@ -200,12 +200,13 @@ export class ScreeningService {
           anxietyScale,
           clientId: client.id,
         },
-      });await this.sendDepressionResult(result.depressionScale, client);
+      });
+      await this.sendDepressionResult(result.depressionScale, client);
       await this.sendAnxietyResult(result.anxietyScale, client);
 
       // Combine messages for better readability
-      const summaryMessage = `Thank you for your responses.\n\nYou're dealing with ${result.depressionScale=="MINIMAL_OR_NONE" ? "Minimal" : result.depressionScale.toLocaleLowerCase().replace(/_/g, ' ')} Depression and ${result.anxietyScale=="MINIMAL_OR_NONE" ? "Minimal" : result.depressionScale.toLocaleLowerCase().replace(/_/g, ' ')} Anxiety.\n\nWe have come to the end of our assessment and you did great! I want you to know that you are very brave for seeking help.\n\nPlease consider contacting us on the number provided should you need to speak with our psychiatric nurse, counsellor, or social worker. You should also consider attending the Mental Health Clinic which runs every Thursday at Access Centre in Kabuusu. Our team is waiting to support you. See you there. Bye.`;
-      //const finalMessage = `We have come to the end of our assessment and you did great! I want you to know that you are very brave for seeking help.\n\nPlease consider contacting us on the number provided should you need to speak with our psychiatric nurse, counsellor, or social worker. You should also consider attending the Mental Health Clinic which runs every Thursday at Access Centre in Kabuusu. Our team is waiting to support you. See you there. Bye.`;
+      const summaryMessage = `Thank you for your responses.\n\nYou're dealing with ${result.depressionScale == 'MINIMAL_OR_NONE' ? 'Minimal' : result.depressionScale.toLocaleLowerCase().replace(/_/g, ' ')} Depression and ${result.anxietyScale == 'MINIMAL_OR_NONE' ? 'Minimal' : result.depressionScale.toLocaleLowerCase().replace(/_/g, ' ')} Anxiety.\n\nWe have come to the end of our assessment and you did great! I want you to know that you are very brave for seeking help.\n\nPlease consider contacting us on the number provided should you need to speak with our psychiatric nurse, counsellor, or social worker. You should also consider attending the Mental Health Clinic which runs every Thursday at Access Centre in Kabuusu. Our team is waiting to support you. See you there. Bye.`;
+      //const finalMessage = `We have come to the end of our assessment, you did great! I want you to know that you are very brave for seeking help.\n\nPlease consider contacting us on the number provided should you need to speak with our psychiatric nurse, counsellor, or social worker. You should also consider attending the Mental Health Clinic which runs every Thursday at Access Centre in Kabuusu. Our team is waiting to support you. See you there. Bye.`;
 
       await this.whatsappService.sendWhatsappMessage(
         client.whatsapp_number,
@@ -224,6 +225,11 @@ export class ScreeningService {
         client.whatsapp_number,
         'Check out this video\n\nhttps://youtube.com/shorts/LYMpsu9WfQ0?feature=shar)',
       );
+    } else if (scale == 'SEVERE') {
+      await this.whatsappService.sendWhatsappMessage(
+        client.whatsapp_number,
+        'Check out this video\n\nhttps://www.youtube.com/watch?v=B7dKgg4Z9tg&rco=1)',
+      );
     }
   }
 
@@ -241,7 +247,7 @@ export class ScreeningService {
     if (scale == 'MINIMAL_OR_NONE' || 'MILD') {
       await this.whatsappService.sendWhatsappMessage(
         client.whatsapp_number,
-        `Watch this short video!\n\nhttps://youtu.be/WWloIAQpMcQ\n\n- Get someplace quiet and sit down.\n- Take note of the time\n- Take slow deep breathes while counting to 10, for 15-20 minutes. This should help you feel better\n- Have a glass of cool water\n\nIf after 20- 30 minutes, you are still feeling uneasy, please seek medical help at the nearest government aided health facility.`,
+        `Watch this short video!\n\nhttps://youtube.com/shorts/5qlxeeYNz-E?si=Pm2o7pyeOqmIX7L7\n\nhttps://youtube.com/shorts/03Q4mNDztt4?si=fjJIYcHQpTaWSwSv\n\n- Get someplace quiet and sit down.\n- Take note of the time\n- Take slow deep breathes while counting to 10, for 15-20 minutes. This should help you feel better\n- Have a glass of cool water\n\nIf after 20- 30 minutes, you are still feeling uneasy, please seek medical help at the nearest government aided health facility.`,
       );
     }
     if (scale == 'MODERATELY_SEVERE' || 'MODERATE' || 'SEVERE') {

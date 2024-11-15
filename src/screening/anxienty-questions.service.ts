@@ -60,6 +60,4 @@ export class AncientQuestions {
       return Scale.SEVERE;
     }
   }
-
-
 }

@@ -53,7 +53,7 @@ export class DepressionQuestions {
     },
     {
       question:
-      //'Moving or speaking so slowly that other people could have noticed or the opposite: being so fidgety or restless that you have been moving around a lot more than usual.',
+        //'Moving or speaking so slowly that other people could have noticed or the opposite: being so fidgety or restless that you have been moving around a lot more than usual.',
         'Have you been doing things too fast or too slowly that people around you have noticed?',
       options: this.defaultOptions,
     },
