@@ -15,6 +15,7 @@ export class ScreeningService {
     private anxientQuestions: AncientQuestions,
   ) {}
   async handleIncomingMessage(message: any): Promise<void> {
+    console.log(message);
     if (message.type === 'text') {
       this.logger.log('New message received');
       await this.processMessage(
@@ -200,21 +201,22 @@ export class ScreeningService {
           anxietyScale,
           clientId: client.id,
         },
-      });await this.sendDepressionResult(result.depressionScale, client);
+      });
       await this.sendAnxietyResult(result.anxietyScale, client);
+      await this.sendDepressionResult(result.depressionScale, client);
 
       // Combine messages for better readability
-      const summaryMessage = `Thank you for your responses.\n\nYou're dealing with ${result.depressionScale=="MINIMAL_OR_NONE" ? "Minimal" : result.depressionScale.toLocaleLowerCase().replace(/_/g, ' ')} Depression and ${result.anxietyScale=="MINIMAL_OR_NONE" ? "Minimal" : result.depressionScale.toLocaleLowerCase().replace(/_/g, ' ')} Anxiety.\n\nWe have come to the end of our assessment and you did great! I want you to know that you are very brave for seeking help.\n\nPlease consider contacting us on the number provided should you need to speak with our psychiatric nurse, counsellor, or social worker. You should also consider attending the Mental Health Clinic which runs every Thursday at Access Centre in Kabuusu. Our team is waiting to support you. See you there. Bye.`;
-      //const finalMessage = `We have come to the end of our assessment and you did great! I want you to know that you are very brave for seeking help.\n\nPlease consider contacting us on the number provided should you need to speak with our psychiatric nurse, counsellor, or social worker. You should also consider attending the Mental Health Clinic which runs every Thursday at Access Centre in Kabuusu. Our team is waiting to support you. See you there. Bye.`;
+      const summaryMessage = `Thank you for your responses.\n\n*Your score is:*\n\nDepression: ${result.depressionScore}\nAnxiety: ${result.anxietyScore}`;
+      const finalMessage = `We have come to the end of our assessment and you did great! I want you to know that you are very brave for seeking help.\n\nPlease consider contacting us on the number provided should you need to speak with our psychiatric nurse, counsellor, or social worker. You should also consider attending the Mental Health Clinic which runs every Thursday at Access Centre in Kabuusu. Our team is waiting to support you. See you there. Bye.`;
 
       await this.whatsappService.sendWhatsappMessage(
         client.whatsapp_number,
         summaryMessage,
       );
-      // await this.whatsappService.sendWhatsappMessage(
-      //   client.whatsapp_number,
-      //   finalMessage,
-      // );
+      await this.whatsappService.sendWhatsappMessage(
+        client.whatsapp_number,
+        finalMessage,
+      );
     }
   }
 
@@ -250,6 +252,21 @@ export class ScreeningService {
         `Watch this short video!\n\nhttps://youtu.be/RWMCdP5Vujo?si=Lf0rRLTXUSUEy_6R\n\nModerate and severe Anxiety is manageable by our Mental Health Team at Kabuusu Access Centre. We run a clinic every Thursday from 9am to 4pm. You are most welcome!`,
       );
     }
+  }
+
+  private async confirmViewResults(client: Client) {
+    // await this.prisma.client.update({
+    //   where: { id: client.id },
+    //   data: { screeningStatus: 'NEXT_OF_KIN', location: message },
+    // });
+    await this.whatsappService.sendWhatsappInteractiveMessage(
+      client.whatsapp_number,
+      `Your assessment from our interaction is nearly ready, remember this doesn’t replace a professional examination. I encourage you to visit the UNHCR Access Centre for a more detailed assessment and support with our experienced psychiatrist, nurses, counsellors and social workers.\n\nAre you ready to review your assessment?`,
+      [
+        { id: '1', title: 'Let’s do it' },
+        { id: '2', title: 'Not Now' },
+      ],
+    );
   }
 
   private async processMessage(

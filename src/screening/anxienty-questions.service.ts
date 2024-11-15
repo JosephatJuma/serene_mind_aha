@@ -34,7 +34,8 @@ export class AncientQuestions {
       options: this.defaultOptions,
     },
     {
-      question: 'Being so restless that it’s hard to sit still',
+      question: 'Being so restless that it’s hard to sit in one place (still)',
+      //'Being so restless that it’s hard to sit still',
       options: this.defaultOptions,
     },
     {
@@ -42,7 +43,8 @@ export class AncientQuestions {
       options: this.defaultOptions,
     },
     {
-      question: 'Feeling afraid, as if something awful might happen',
+      question: 'Feeling afraid, as if something bad (awful) might happen',
+      //'Feeling afraid, as if something awful might happen',
       options: this.defaultOptions,
     },
   ];
@@ -58,4 +60,6 @@ export class AncientQuestions {
       return Scale.SEVERE;
     }
   }
+
+
 }
