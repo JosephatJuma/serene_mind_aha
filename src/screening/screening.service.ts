@@ -201,17 +201,18 @@ export class ScreeningService {
           clientId: client.id,
         },
       });
-      await this.sendDepressionResult(result.depressionScale, client);
-      await this.sendAnxietyResult(result.anxietyScale, client);
-
-      // Combine messages for better readability
-      const summaryMessage = `Thank you for your responses.\n\nYou're dealing with ${result.depressionScale == 'MINIMAL_OR_NONE' ? 'Minimal' : result.depressionScale.toLocaleLowerCase().replace(/_/g, ' ')} Depression and ${result.anxietyScale == 'MINIMAL_OR_NONE' ? 'Minimal' : result.depressionScale.toLocaleLowerCase().replace(/_/g, ' ')} Anxiety.\n\nWe have come to the end of our assessment and you did great! I want you to know that you are very brave for seeking help.\n\nPlease consider contacting us on the number provided should you need to speak with our psychiatric nurse, counsellor, or social worker. You should also consider attending the Mental Health Clinic which runs every Thursday at Access Centre in Kabuusu. Our team is waiting to support you. See you there. Bye.`;
+      const summaryMessage = `Thank you for your responses.\n\n*You're dealing with ${result.depressionScale == 'MINIMAL_OR_NONE' ? 'Minimal' : result.depressionScale.toLocaleLowerCase().replace(/_/g, ' ')} Depression and ${result.anxietyScale == 'MINIMAL_OR_NONE' ? 'Minimal' : result.depressionScale.toLocaleLowerCase().replace(/_/g, ' ')} Anxiety.*\n\nWe have come to the end of our assessment and you did great! I want you to know that you are very brave for seeking help.\n\nPlease consider contacting us on the number provided should you need to speak with our psychiatric nurse, counsellor, or social worker. You should also consider attending the Mental Health Clinic which runs every Thursday at Access Centre in Kabuusu. Our team is waiting to support you. See you there. Bye.`;
       //const finalMessage = `We have come to the end of our assessment, you did great! I want you to know that you are very brave for seeking help.\n\nPlease consider contacting us on the number provided should you need to speak with our psychiatric nurse, counsellor, or social worker. You should also consider attending the Mental Health Clinic which runs every Thursday at Access Centre in Kabuusu. Our team is waiting to support you. See you there. Bye.`;
 
       await this.whatsappService.sendWhatsappMessage(
         client.whatsapp_number,
         summaryMessage,
       );
+      await this.sendDepressionResult(result.depressionScale, client);
+      await this.sendAnxietyResult(result.anxietyScale, client);
+
+      // Combine messages for better readability
+
       // await this.whatsappService.sendWhatsappMessage(
       //   client.whatsapp_number,
       //   finalMessage,
