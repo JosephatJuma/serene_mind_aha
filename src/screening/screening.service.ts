@@ -201,7 +201,8 @@ export class ScreeningService {
           clientId: client.id,
         },
       });
-      const summaryMessage = `Thank you for your responses.\n\n*You're dealing with ${result.depressionScale == 'MINIMAL_OR_NONE' ? 'Minimal' : result.depressionScale.toLocaleLowerCase().replace(/_/g, ' ')} Depression and ${result.anxietyScale == 'MINIMAL_OR_NONE' ? 'Minimal' : result.depressionScale.toLocaleLowerCase().replace(/_/g, ' ')} Anxiety.*\n\nWe have come to the end of our assessment and you did great! I want you to know that you are very brave for seeking help.\n\nPlease consider contacting us on the number provided should you need to speak with our psychiatric nurse, counsellor, or social worker. You should also consider attending the Mental Health Clinic which runs every Thursday at Access Centre in Kabuusu. Our team is waiting to support you. See you there. Bye.`;
+      const summaryMessage: string = `We have come to the end of our assessment and you did great! A counsellor will call you to discuss more about your results.\n\nI want you to know that you are very brave for seeking help`;
+      //`Thank you for your responses.\n\n*You're dealing with ${result.depressionScale == 'MINIMAL_OR_NONE' ? 'Minimal' : result.depressionScale.toLocaleLowerCase().replace(/_/g, ' ')} Depression and ${result.anxietyScale == 'MINIMAL_OR_NONE' ? 'Minimal' : result.depressionScale.toLocaleLowerCase().replace(/_/g, ' ')} Anxiety.*\n\nWe have come to the end of our assessment and you did great! I want you to know that you are very brave for seeking help.\n\nPlease consider contacting us on the number provided should you need to speak with our psychiatric nurse, counsellor, or social worker. You should also consider attending the Mental Health Clinic which runs every Thursday at Access Centre in Kabuusu. Our team is waiting to support you. See you there. Bye.`;
       //const finalMessage = `We have come to the end of our assessment, you did great! I want you to know that you are very brave for seeking help.\n\nPlease consider contacting us on the number provided should you need to speak with our psychiatric nurse, counsellor, or social worker. You should also consider attending the Mental Health Clinic which runs every Thursday at Access Centre in Kabuusu. Our team is waiting to support you. See you there. Bye.`;
 
       await this.whatsappService.sendWhatsappMessage(
@@ -221,40 +222,38 @@ export class ScreeningService {
   }
 
   private async sendDepressionResult(scale: Scale, client: Client) {
-    if (scale == 'MINIMAL_OR_NONE' || 'MILD') {
+    if (scale === 'MINIMAL_OR_NONE' || scale === 'MILD') {
       await this.whatsappService.sendWhatsappMessage(
         client.whatsapp_number,
-        'Check out this video\n\nhttps://youtube.com/shorts/LYMpsu9WfQ0?feature=shar)',
+        'Check out this video\n\nhttps://youtube.com/shorts/LYMpsu9WfQ0?feature=shar',
       );
-    } else if (scale == 'SEVERE') {
+    } else if (scale === 'SEVERE') {
       await this.whatsappService.sendWhatsappMessage(
         client.whatsapp_number,
-        'Check out this video\n\nhttps://www.youtube.com/watch?v=B7dKgg4Z9tg&rco=1)',
+        'Check out this video\n\nhttps://www.youtube.com/watch?v=B7dKgg4Z9tg&rco=1',
       );
     }
   }
 
   private async sendAnxietyResult(scale: Scale, client: Client) {
-    if (scale == 'SEVERE') {
-      // await this.whatsappService.sendWhatsappMessage(
-      //   '',
-      //   `You have a Severe Depression case to attend to.\n\nClient Name: ${client.name}\n WhatsApp Number: ${client.whatsapp_number}\nAge: ${client.age}\nCategory: ${result.depressionScale.toLocaleLowerCase()}`,
-      // );
+    if (scale === 'SEVERE') {
       await this.whatsappService.sendWhatsappMessage(
         client.whatsapp_number,
-        `Please come to the Kabuusu Access Centre for further analysis by the Psychiatrist Nurse/ Psychologist/ Psychiatrist.\n\n Watch this video in the mean-time\n\nhttps://youtu.be/FbFPq1bUKEY`,
+        `Please come to the Kabuusu Access Centre for further analysis by the Psychiatrist Nurse/ Psychologist/ Psychiatrist.\n\n Watch this video in the meantime\n\nhttps://youtu.be/FbFPq1bUKEY`,
       );
-    }
-    if (scale == 'MINIMAL_OR_NONE' || 'MILD') {
+    } else if (scale === 'MINIMAL_OR_NONE' || scale === 'MILD') {
       await this.whatsappService.sendWhatsappMessage(
         client.whatsapp_number,
-        `Watch this short video!\n\nhttps://youtube.com/shorts/5qlxeeYNz-E?si=Pm2o7pyeOqmIX7L7\n\nhttps://youtube.com/shorts/03Q4mNDztt4?si=fjJIYcHQpTaWSwSv\n\n- Get someplace quiet and sit down.\n- Take note of the time\n- Take slow deep breathes while counting to 10, for 15-20 minutes. This should help you feel better\n- Have a glass of cool water\n\nIf after 20- 30 minutes, you are still feeling uneasy, please seek medical help at the nearest government aided health facility.`,
+        `Watch this short video!\n\nhttps://youtube.com/shorts/5qlxeeYNz-E?si=Pm2o7pyeOqmIX7L7\n\nhttps://youtube.com/shorts/03Q4mNDztt4?si=fjJIYcHQpTaWSwSv\n\n- Get someplace quiet and sit down.\n- Take note of the time\n- Take slow deep breaths while counting to 10, for 15-20 minutes. This should help you feel better.\n- Have a glass of cool water.\n\nIf after 20-30 minutes, you are still feeling uneasy, please seek medical help at the nearest government-aided health facility.`,
       );
-    }
-    if (scale == 'MODERATELY_SEVERE' || 'MODERATE' || 'SEVERE') {
+    } else if (
+      scale === 'MODERATELY_SEVERE' ||
+      scale === 'MODERATE' ||
+      scale === 'SEVERE'
+    ) {
       await this.whatsappService.sendWhatsappMessage(
         client.whatsapp_number,
-        `Watch this short video!\n\nhttps://youtu.be/RWMCdP5Vujo?si=Lf0rRLTXUSUEy_6R\n\nModerate and severe Anxiety is manageable by our Mental Health Team at Kabuusu Access Centre. We run a clinic every Thursday from 9am to 4pm. You are most welcome!`,
+        `Watch this short video!\n\nhttps://youtu.be/RWMCdP5Vujo?si=Lf0rRLTXUSUEy_6R\n\nModerate and severe anxiety is manageable by our Mental Health Team at Kabuusu Access Centre. We run a clinic every Thursday from 9am to 4pm. You are most welcome!`,
       );
     }
   }
