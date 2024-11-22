@@ -204,13 +204,13 @@ export class ScreeningService {
       const summaryMessage: string = `We have come to the end of our assessment and you did great! A counsellor will call you to discuss more about your results.\n\nI want you to know that you are very brave for seeking help`;
       //`Thank you for your responses.\n\n*You're dealing with ${result.depressionScale == 'MINIMAL_OR_NONE' ? 'Minimal' : result.depressionScale.toLocaleLowerCase().replace(/_/g, ' ')} Depression and ${result.anxietyScale == 'MINIMAL_OR_NONE' ? 'Minimal' : result.depressionScale.toLocaleLowerCase().replace(/_/g, ' ')} Anxiety.*\n\nWe have come to the end of our assessment and you did great! I want you to know that you are very brave for seeking help.\n\nPlease consider contacting us on the number provided should you need to speak with our psychiatric nurse, counsellor, or social worker. You should also consider attending the Mental Health Clinic which runs every Thursday at Access Centre in Kabuusu. Our team is waiting to support you. See you there. Bye.`;
       //const finalMessage = `We have come to the end of our assessment, you did great! I want you to know that you are very brave for seeking help.\n\nPlease consider contacting us on the number provided should you need to speak with our psychiatric nurse, counsellor, or social worker. You should also consider attending the Mental Health Clinic which runs every Thursday at Access Centre in Kabuusu. Our team is waiting to support you. See you there. Bye.`;
-
+      await this.sendDepressionResult(result.depressionScale, client);
+      await this.sendAnxietyResult(result.anxietyScale, client);
       await this.whatsappService.sendWhatsappMessage(
         client.whatsapp_number,
         summaryMessage,
       );
-      await this.sendDepressionResult(result.depressionScale, client);
-      await this.sendAnxietyResult(result.anxietyScale, client);
+
 
       // Combine messages for better readability
 
@@ -236,12 +236,13 @@ export class ScreeningService {
   }
 
   private async sendAnxietyResult(scale: Scale, client: Client) {
-    if (scale === 'SEVERE') {
-      await this.whatsappService.sendWhatsappMessage(
-        client.whatsapp_number,
-        `Please come to the Kabuusu Access Centre for further analysis by the Psychiatrist Nurse/ Psychologist/ Psychiatrist.\n\n Watch this video in the meantime\n\nhttps://youtu.be/FbFPq1bUKEY`,
-      );
-    } else if (scale === 'MINIMAL_OR_NONE' || scale === 'MILD') {
+    // if (scale === 'SEVERE') {
+    //   await this.whatsappService.sendWhatsappMessage(
+    //     client.whatsapp_number,
+    //     `Please come to the Kabuusu Access Centre for further analysis by the Psychiatrist Nurse/ Psychologist/ Psychiatrist.\n\n Watch this video in the meantime\n\nhttps://youtu.be/FbFPq1bUKEY`,
+    //   );
+    // } else
+    if (scale === 'MINIMAL_OR_NONE' || scale === 'MILD') {
       await this.whatsappService.sendWhatsappMessage(
         client.whatsapp_number,
         `Watch this short video!\n\nhttps://youtube.com/shorts/5qlxeeYNz-E?si=Pm2o7pyeOqmIX7L7\n\nhttps://youtube.com/shorts/03Q4mNDztt4?si=fjJIYcHQpTaWSwSv\n\n- Get someplace quiet and sit down.\n- Take note of the time\n- Take slow deep breaths while counting to 10, for 15-20 minutes. This should help you feel better.\n- Have a glass of cool water.\n\nIf after 20-30 minutes, you are still feeling uneasy, please seek medical help at the nearest government-aided health facility.`,
