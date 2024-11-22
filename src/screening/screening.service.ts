@@ -254,7 +254,7 @@ export class ScreeningService {
     ) {
       await this.whatsappService.sendWhatsappMessage(
         client.whatsapp_number,
-        `Watch this short video!\n\nhttps://youtu.be/RWMCdP5Vujo?si=Lf0rRLTXUSUEy_6R\n\nModerate and severe anxiety is manageable by our Mental Health Team at Kabuusu Access Centre. We run a clinic every Thursday from 9am to 4pm. You are most welcome!`,
+        `Watch this short video!\n\nhttps://youtu.be/RWMCdP5Vujo?si=Lf0rRLTXUSUEy_6R`,
       );
     }
   }
